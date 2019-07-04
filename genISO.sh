@@ -45,7 +45,9 @@ cp /etc/resolv.conf edit/etc/
 mount --bind /dev/ edit/dev
 
 echo
-echo "chrooting."
+echo "[i] chrooting."
+echo
+
 chroot edit /bin/bash <<"EOT"
 
 #
@@ -78,7 +80,8 @@ EOT
 
 umount edit/dev
 
-echo "chroot work completed."
+echo
+echo "[i] chroot work completed."
 echo
 
 chmod +w extract/casper/filesystem.manifest
@@ -107,4 +110,7 @@ xorriso -as mkisofs -b isolinux/isolinux.bin -isohybrid-mbr isolinux/isohdpfx.bi
  -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
  -isohybrid-gpt-basdat -o  "../${CUSTOMNAME}" .
 
-# genisoimage -D -r -V "${UBUNTUVERSION}-hardened" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o "../${CUSTOMNAME}" .
+cd ~/custom-img || exit 1
+umount ./mnt || exit 1
+rm -rf ./edit ./extract ./mnt
+sha256sum "./${CUSTOMNAME}" > SHA256SUM
