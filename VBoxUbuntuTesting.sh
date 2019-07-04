@@ -1,7 +1,6 @@
 #!/bin/sh
-
 UBUNTUVERSION="ubuntu-18.04.2"
-ISOIMAGE="${UBUNTUVERSION}-live-server-amd64.iso"
+ISOIMAGE="${UBUNTUVERSION}-hardened-amd64.iso"
 ISO="./${ISOIMAGE}"
 VMS="ubuntu_64
 ubuntu_64_efi
