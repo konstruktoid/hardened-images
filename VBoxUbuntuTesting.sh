@@ -8,7 +8,12 @@ ubuntu_64_efi64"
 PORT=2230
 
 if ! command -v VBoxManage 1>/dev/null; then
-  echo "VBoxManage required. Exiting."
+  echo "[e] VBoxManage required. Exiting."
+  exit 1
+fi
+
+if ! sha256sum -c ./SHA256SUM; then
+  echo "[e] Checksum didn't match. Exiting."
   exit 1
 fi
 
@@ -36,6 +41,8 @@ for VM in ${VMS}; do
   VBoxManage startvm "${VM}"
 
   PORT=$(( PORT + 1 ))
+
+  echo "[i] ${VM} SSH port: ${PORT}."
 done
 
 echo "
