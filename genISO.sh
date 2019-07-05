@@ -1,5 +1,8 @@
 #!/bin/bash
+#
+# Thanks for the groundwork:
 # https://nathanpfry.com/how-to-customize-an-ubuntu-installation-disc/
+#
 
 UBUNTUVERSION="ubuntu-18.04.2"
 CUSTOMNAME="${UBUNTUVERSION}-hardened-amd64.iso"
@@ -9,27 +12,46 @@ ISOURL="http://releases.ubuntu.com/bionic/${ISOIMAGE}"
 SHA256="ea6ccb5b57813908c006f42f7ac8eaa4fc603883a2d07876cf9ed74610ba2f53"
 # SHASUM="http://releases.ubuntu.com/bionic/SHA256SUMS"
 
+if [ "$(id -u)" -ne 0 ]; then
+  echo "[e] Not enough privileges. Exiting."
+  exit 1
+fi
+
+if ! command -v shellcheck; then
+  echo "[e] shellcheck not found. Exiting."
+  exit 1
+fi
+
+if ! shellcheck -x -s bash -f gcc ./*.sh config/*.sh; then
+  echo "[e] shellcheck failed. Exiting."
+  exit 1
+fi
+
 for p in cpio fakeroot gunzip xorriso; do
   if ! command -v "$p"; then
-    echo "$p required."
-    apt-get -y install "$p"
+    echo "[i] $p required. Installing."
+    apt-get --assume-yes install "$p"
   fi
 done
 
 if [ -f "./${ISOIMAGE}" ]; then
   if [ "$(sha256sum ./${ISOIMAGE} | awk '{print $1}')" = "$SHA256" ]; then
-    echo "Checksum for ${ISOIMAGE} matches."
+    echo
+    echo "[i] Checksum for ${ISOIMAGE} matches."
   else
-    echo "Checksum for ${ISOIMAGE} don't match."
+    echo
+    echo "[e] Checksum for ${ISOIMAGE} don't match."
     exit 1
   fi
 else
-  echo "No ${ISOIMAGE} present."
-  echo "${ISOURL}"
+  echo
+  echo "[e] No ${ISOIMAGE} present."
+  echo "[i] Download ${ISOURL}."
   exit 1
 fi
 
 mkdir ~/custom-img
+cp -R ./config/ ~/custom-img/
 
 cp "${ISOIMAGE}" ~/custom-img
 cd ~/custom-img || exit 1
@@ -41,18 +63,16 @@ mount -o loop "${ISOIMAGE}" mnt
 rsync --exclude=/casper/filesystem.squashfs -a mnt/ extract
 unsquashfs mnt/casper/filesystem.squashfs
 mv squashfs-root edit
+
 cp /etc/resolv.conf edit/etc/
 mount --bind /dev/ edit/dev
+cp -R ./config/ edit/root/
 
 echo
 echo "[i] chrooting."
 echo
 
 chroot edit /bin/bash <<"EOT"
-
-#
-# Working inside chroot
-#
 
 mount -t proc none /proc
 mount -t sysfs none /sys
@@ -64,12 +84,15 @@ dpkg-divert --local --rename --add /sbin/initctl
 ln -s /bin/true /sbin/initctl
 dpkg --add-architecture i386
 
-apt-get update
-apt-get --assume-yes upgrade
-apt-get autoremove
-apt-get autoclean
+cd /root/config
+bash config.sh
 
-rm -rf /tmp/* ~/.bash_history
+rm -rf /root/config
+
+history -w
+history -c
+
+rm -rf /tmp/* ~/.bash_history /var/tmp/*
 rm /var/lib/dbus/machine-id
 rm /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
@@ -96,10 +119,10 @@ sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
 mksquashfs edit extract/casper/filesystem.squashfs -b 1048576
 
-printf "%s" "$( du -sx --block-size=1 edit | cut -f1)" |  tee extract/casper/filesystem.size
+printf "%s" "$(du -sx --block-size=1 edit | cut -f1)" |  tee extract/casper/filesystem.size
 
 cd extract || exit 1
- rm md5sum.txt
+rm md5sum.txt
 find . -type f -print0 |  xargs -0 md5sum | grep -v isolinux/boot.cat |  tee md5sum.txt
 
 dd if=~/custom-img/${ISOIMAGE} bs=512 count=1 of=isolinux/isohdpfx.bin
