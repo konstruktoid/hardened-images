@@ -1,0 +1,36 @@
+= Ubuntu server ISO generator
+
+== What is this?
+
+The `genIso.sh` script generates a Ubuntu server ISO with some basic security
+configuration applied.
+
+The security configuration is based on https://github.com/konstruktoid/hardening[konstruktoid/hardening].
+
+== How do I use it?
+
+Download the repository with `git clone https://github.com/konstruktoid/hardening-geniso`,
+run `sudo bash genISO.sh` in the `hardening-geniso` directory.
+
+If nothing bad happens, an ISO and a `SHA256SUM` file should be present in the
+`~/custom-img/` directory.
+
+== Structure
+
+[source,shell]
+----
+.
+├── SHA256SUM
+├── VBoxUbuntuTesting.sh
+├── Vagrantfile
+├── config
+│   ├── config.sh
+│   ├── sysctl.conf
+│   └── tmp.mount
+└── genISO.sh
+----
+
+== Test automation using VirtualBox
+Running `bash ./VBoxUbuntuTesting.sh` will use https://www.virtualbox.org/[VirtualBox]
+to run an available ISO on virtual machines configured with `BIOS`, `EFI`
+and `EFI64` firmware.
