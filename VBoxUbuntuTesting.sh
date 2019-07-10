@@ -40,9 +40,8 @@ for VM in ${VMS}; do
   VBoxManage modifyvm "${VM}" --natpf1 "guestssh,tcp,,${PORT},,22"
   VBoxManage startvm "${VM}"
 
-  PORT=$(( PORT + 1 ))
-
   echo "[i] ${VM} SSH port: ${PORT}."
+  PORT=$(( PORT + 1 ))
 done
 
 echo "
