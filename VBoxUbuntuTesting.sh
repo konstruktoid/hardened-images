@@ -7,6 +7,8 @@ ubuntu_64_efi
 ubuntu_64_efi64"
 PORT=2230
 
+TMPFILE="$(mktemp)"
+
 if ! command -v VBoxManage 1>/dev/null; then
   echo "[e] VBoxManage required. Exiting."
   exit 1
@@ -15,6 +17,9 @@ fi
 if ! sha256sum -c ./SHA256SUM; then
   echo "[e] Checksum didn't match. Exiting."
   exit 1
+else
+  echo > "$TMPFILE"
+  echo "[i] ISO checksum is correct." >> "$TMPFILE"
 fi
 
 for VM in ${VMS}; do
@@ -40,7 +45,7 @@ for VM in ${VMS}; do
   VBoxManage modifyvm "${VM}" --natpf1 "guestssh,tcp,,${PORT},,22"
   VBoxManage startvm "${VM}"
 
-  echo "[i] ${VM} SSH port: ${PORT}."
+  echo "[i] ${VM} SSH port: ${PORT}." >> "$TMPFILE"
   PORT=$(( PORT + 1 ))
 done
 
@@ -51,6 +56,10 @@ echo "
     - VBoxManage list vms
     - VBoxManage controlvm VM poweroff
     - VBoxManage unregistervm VM --delete
-"
+" >> "$TMPFILE"
 
+cat "$TMPFILE"
+rm "$TMPFILE"
+
+# One line to clean them all:
 # for b in $(VBoxManage list vms | grep -o 'ubuntu_64.*"' | tr -d '"'); do VBoxManage controlvm "${b}" poweroff ; VBoxManage unregistervm "${b}" --delete; done
