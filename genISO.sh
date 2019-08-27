@@ -17,27 +17,25 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-if ! command -v shellcheck; then
-  echo "[e] shellcheck not found. Exiting."
-  exit 1
-fi
+apt-get -q=2 update
 
-if ! shellcheck -x -s bash -f gcc ./*.sh config/*.sh; then
-  echo "[e] shellcheck failed. Exiting."
-  exit 1
-fi
-
-for p in cpio fakeroot gunzip xorriso; do
+for p in cpio fakeroot gunzip shellcheck xorriso; do
   if ! command -v "$p"; then
     echo "[i] $p required. Installing."
     apt-get --assume-yes install "$p"
   fi
 done
 
+if ! shellcheck -x -s bash -f gcc ./*.sh config/*.sh; then
+  echo "[e] shellcheck failed. Exiting."
+  exit 1
+fi
+
 if [ -f "./${ISOIMAGE}" ]; then
   if [ "$(sha256sum ./${ISOIMAGE} | awk '{print $1}')" = "$SHA256" ]; then
     echo
     echo "[i] Checksum for ${ISOIMAGE} matches."
+    echo
   else
     echo
     echo "[e] Checksum for ${ISOIMAGE} don't match."
@@ -66,7 +64,7 @@ mv squashfs-root edit
 
 cp /etc/resolv.conf edit/etc/
 mount --bind /dev/ edit/dev
-cp -R ./config/ edit/root/
+cp -R ./config/ edit/usr/local/bin/hardening-config
 
 echo
 echo "[i] chrooting."
@@ -84,10 +82,21 @@ dpkg-divert --local --rename --add /sbin/initctl
 ln -s /bin/true /sbin/initctl
 dpkg --add-architecture i386
 
-cd /root/config
-bash config.sh
+apt-get update
+apt-get --assume-yes --with-new-pkgs upgrade
+apt-get --assume-yes clean
+apt-get --assume-yes autoremove
 
-rm -rf /root/config
+echo "ONBOOT=0" > /etc/default/hardening-config
+
+chown root:root /usr/local/bin/hardening-config/config.sh
+chmod 0755 /usr/local/bin/hardening-config/config.sh
+cp /usr/local/bin/hardening-config/hardening-config.service /etc/systemd/system/
+chmod 0644 /etc/systemd/system/hardening-config.service
+systemctl enable /etc/systemd/system/hardening-config.service
+
+/lib/systemd/systemd-random-seed load
+/lib/systemd/systemd-random-seed save
 
 history -w
 history -c
@@ -99,6 +108,7 @@ dpkg-divert --rename --remove /sbin/initctl
 umount /proc || umount -lf /proc
 umount /sys
 umount /dev/pts
+
 EOT
 
 umount edit/dev
@@ -135,5 +145,5 @@ xorriso -as mkisofs -b isolinux/isolinux.bin -isohybrid-mbr isolinux/isohdpfx.bi
 
 cd ~/custom-img || exit 1
 umount ./mnt || exit 1
-rm -rf ./edit ./extract ./mnt
+rm -rf ./edit ./extract ./mnt ./config
 sha256sum "./${CUSTOMNAME}" > SHA256SUM

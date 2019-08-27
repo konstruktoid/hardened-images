@@ -1,9 +1,0 @@
-[Unit]
-Description=Hardening Configuration oneshot service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/bash /usr/local/bin/hardening-config/config.sh
-
-[Install]
-WantedBy=multi-user.target
