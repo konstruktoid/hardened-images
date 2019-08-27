@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/bin/sh -e
 # Configuration files
 COREDUMPCONF='/etc/systemd/coredump.conf'
 DISABLEFS='/etc/modprobe.d/disablefs.conf'
@@ -11,62 +10,44 @@ RESOLVEDCONF='/etc/systemd/resolved.conf'
 SECURITYACCESS='/etc/security/access.conf'
 SSHDFILE='/etc/ssh/sshd_config'
 SYSCTL='/etc/sysctl.conf'
-SYSCTL_CONF='./sysctl.conf'
+SYSCTL_CONF='/usr/local/bin/hardening-config/sysctl.conf'
 SYSTEMCONF='/etc/systemd/system.conf'
 USERCONF='/etc/systemd/user.conf'
 
-function f_pre {
-  SCRIPT_COUNT="0"
-  ((SCRIPT_COUNT++))
+f_pre() {
+  if [ -f /lib/systemd/systemd-random-seed ]; then
+    /lib/systemd/systemd-random-seed load
+    /lib/systemd/systemd-random-seed save
+  fi
 
   export TERM=linux
   export DEBIAN_FRONTEND=noninteractive
 
   APT="apt-get --assume-yes"
-
-  readonly APTFLAGS
-  readonly APT
-
-  if [ $EUID -ne 0 ]; then
-    echo
-    echo "[e] Not root or not enough privileges. Exiting."
-    echo
-    exit 1
-  fi
-
-  if ! lsb_release -i | grep 'Ubuntu'; then
-    echo
-    echo "[e] Ubuntu only. Exiting."
-    echo
-    exit 1
-  fi
 }
 
-function f_disablenet {
-  echo "[$SCRIPT_COUNT] Disable misc network protocols"
-
-  local NET
+ f_disablenet() {
   NET="dccp sctp rds tipc"
   for disable in $NET; do
     if ! grep -q "$disable" "$DISABLENET" 2> /dev/null; then
       echo "install $disable /bin/true" >> "$DISABLENET"
     fi
   done
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_fstab {
-  echo "[$SCRIPT_COUNT] /etc/fstab, system/tmp.mount and system/var-tmp.mount"
-
-  cp ./tmp.mount /etc/systemd/system/tmp.mount
+ f_fstab() {
+  cp /usr/local/bin/hardening-config/tmp.mount /etc/systemd/system/tmp.mount
   cp /etc/fstab /etc/fstab.bck
 
   TMPFSTAB=$(mktemp --tmpdir fstab.XXXXX)
 
   sed -i '/floppy/d' /etc/fstab
 
-  grep -v -E '[[:space:]]/home[[:space:]]|[[:space:]]/var/log[[:space:]]|[[:space:]]/var/log/audit[[:space:]]' /etc/fstab > "$TMPFSTAB"
+  grep -v -E '[[:space:]]/boot[[:space:]]|[[:space:]]/home[[:space:]]|[[:space:]]/var/log[[:space:]]|[[:space:]]/var/log/audit[[:space:]]' /etc/fstab > "$TMPFSTAB"
+
+  if grep -q '[[:space:]]/boot[[:space:]].*defaults[[:space:]]0 0$' /etc/fstab; then
+    grep '[[:space:]]/boot[[:space:]].*defaults[[:space:]]0 0$' /etc/fstab | sed 's/defaults/defaults,nosuid,nodev/g' >> "$TMPFSTAB"
+  fi
 
   if grep -q '[[:space:]]/home[[:space:]].*defaults[[:space:]]0 0$' /etc/fstab; then
     grep '[[:space:]]/home[[:space:]].*defaults[[:space:]]0 0$' /etc/fstab | sed 's/defaults/defaults,nosuid,nodev/g' >> "$TMPFSTAB"
@@ -107,27 +88,18 @@ function f_fstab {
   else
     echo '/etc/systemd/system/tmp.mount was not found.'
   fi
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_disablefs {
-  echo "[$SCRIPT_COUNT] Disable misc file systems"
-
-  local FS
+ f_disablefs() {
   FS="cramfs freevxfs jffs2 hfs hfsplus squashfs udf vfat"
   for disable in $FS; do
     if ! grep -q "$disable" "$DISABLEFS" 2> /dev/null; then
       echo "install $disable /bin/true" >> "$DISABLEFS"
     fi
   done
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_systemdconf {
-  echo "[$SCRIPT_COUNT] Systemd/system.conf and Systemd/user.conf"
-
+ f_systemdconf() {
   sed -i 's/^#DumpCore=.*/DumpCore=no/' "$SYSTEMCONF"
   sed -i 's/^#CrashShell=.*/CrashShell=no/' "$SYSTEMCONF"
   sed -i 's/^#DefaultLimitCORE=.*/DefaultLimitCORE=0/' "$SYSTEMCONF"
@@ -137,57 +109,33 @@ function f_systemdconf {
   sed -i 's/^#DefaultLimitCORE=.*/DefaultLimitCORE=0/' "$USERCONF"
   sed -i 's/^#DefaultLimitNOFILE=.*/DefaultLimitNOFILE=1024/' "$USERCONF"
   sed -i 's/^#DefaultLimitNPROC=.*/DefaultLimitNPROC=1024/' "$USERCONF"
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_journalctl {
-  echo "[$SCRIPT_COUNT] Systemd/journald.conf and logrotate.conf"
-
+ f_journalctl() {
   sed -i 's/^#Storage=.*/Storage=persistent/' "$JOURNALDCONF"
   sed -i 's/^#ForwardToSyslog=.*/ForwardToSyslog=yes/' "$JOURNALDCONF"
   sed -i 's/^#Compress=.*/Compress=yes/' "$JOURNALDCONF"
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_prelink {
-  echo "[$SCRIPT_COUNT] Prelink"
-
+ f_prelink() {
   if dpkg -l | grep prelink 1> /dev/null; then
     "$(command -v prelink)" -ua 2> /dev/null
     $APT purge prelink
   fi
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_aptget {
-  echo "[$SCRIPT_COUNT] Updating the package index files from their sources"
-
+ f_aptget() {
   $APT update
 
-  ((SCRIPT_COUNT++))
-
-  echo "[$SCRIPT_COUNT] Upgrading installed packages"
-
   $APT --with-new-pkgs upgrade
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_aptget_clean {
-  echo "[$SCRIPT_COUNT] Removing unused packages"
-
+ f_aptget_clean() {
   apt-get -qq clean
   apt-get -qq autoremove
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_aptget_configure {
-  echo "[$SCRIPT_COUNT] Configure APT"
-
+ f_aptget_configure() {
   if ! grep '^Acquire::http::AllowRedirect' /etc/apt/apt.conf.d/* ; then
     echo 'Acquire::http::AllowRedirect "false";' >> /etc/apt/apt.conf.d/01-vendor-ubuntu
   else
@@ -229,43 +177,27 @@ function f_aptget_configure {
   else
     sed -i 's/.*Unattended-Upgrade::Remove-Unused-Dependencies.*/Unattended-Upgrade::Remove-Unused-Dependencies "true";/g' "$(grep -l 'Unattended-Upgrade::Remove-Unused-Dependencies' /etc/apt/apt.conf.d/*)"
   fi
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_hosts {
-  echo "[$SCRIPT_COUNT] /etc/hosts.allow and /etc/hosts.deny"
-
+ f_hosts() {
   echo "sshd : ALL : ALLOW" > /etc/hosts.allow
   echo "ALL: LOCAL, 127.0.0.1" >> /etc/hosts.allow
   echo "ALL: PARANOID" > /etc/hosts.deny
   chmod 644 /etc/hosts.allow
   chmod 644 /etc/hosts.deny
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_rootaccess {
-  echo "[$SCRIPT_COUNT] root access"
-
+ f_rootaccess() {
   if ! grep -E '^+\s:\sroot\s:\s127.0.0.1$|^:root:127.0.0.1' "$SECURITYACCESS"; then
     sed -i 's/^#.*root.*:.*127.0.0.1$/+:root:127.0.0.1/' "$SECURITYACCESS"
   fi
 
   echo "console" > /etc/securetty
 
-  ((SCRIPT_COUNT++))
-
-  echo "[$SCRIPT_COUNT] Mask debug-shell"
-
   systemctl mask debug-shell.service
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_sysctl {
-  echo "[$SCRIPT_COUNT] $SYSCTL"
-
+ f_sysctl() {
   cp "$SYSCTL_CONF" "$SYSCTL"
 
   sed -i '/net.ipv6.conf.eth0.accept_ra_rtr_pref/d' "$SYSCTL"
@@ -279,13 +211,9 @@ function f_sysctl {
   fi
 
   chmod 0600 "$SYSCTL"
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_limitsconf {
-  echo "[$SCRIPT_COUNT] $LIMITSCONF"
-
+f_limitsconf() {
   sed -i 's/^# End of file*//' "$LIMITSCONF"
   { echo '* hard maxlogins 10'
     echo '* hard core 0'
@@ -293,14 +221,9 @@ function f_limitsconf {
     echo '* hard nproc 1024'
     echo '# End of file'
   } >> "$LIMITSCONF"
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_package_remove {
-  echo "[$SCRIPT_COUNT] Package removal"
-
-  local PACKAGE_REMOVE
+f_package_remove() {
   PACKAGE_REMOVE="apport* avahi* beep git pastebinit popularity-contest rsh* talk* telnet* tftp* whoopsie xinetd yp-tools ypbind"
 
   for deb_remove in $PACKAGE_REMOVE; do
@@ -308,39 +231,26 @@ function f_package_remove {
   done
 
   $APT purge "$(dpkg -l | grep '^rc' | awk '{print $2}')"
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_disablemod {
-  echo "[$SCRIPT_COUNT] Disable misc kernel modules"
-
-  local MOD
+f_disablemod() {
   MOD="bluetooth bnep btusb firewire-core n_hdlc net-pf-31 pcspkr soundcore thunderbolt usb-midi usb-storage"
   for disable in $MOD; do
     if ! grep -q "$disable" "$DISABLEMOD" 2> /dev/null; then
       echo "install $disable /bin/true" >> "$DISABLEMOD"
     fi
   done
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_resolvedconf {
-  echo "[$SCRIPT_COUNT] Systemd/resolved.conf"
-
+f_resolvedconf() {
   sed -i "s/^#FallbackDNS=.*/FallbackDNS=1.1.1.1/" "$RESOLVEDCONF"
   sed -i "s/^#DNSSEC=.*/DNSSEC=allow-downgrade/" "$RESOLVEDCONF"
   sed -i "s/^#DNSOverTLS=.*/DNSOverTLS=opportunistic/" "$RESOLVEDCONF"
 
   sed -i '/^hosts:/ s/files dns/files resolve dns/' /etc/nsswitch.conf
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_apport {
-  echo "[$SCRIPT_COUNT] Disable apport, ubuntu-report and popularity-contest"
-
+ f_apport() {
   if command -v gsettings 2>/dev/null 1>&2; then
     gsettings set com.ubuntu.update-notifier show-apport-crashes false
   fi
@@ -349,50 +259,38 @@ function f_apport {
     ubuntu-report -f send no
   fi
 
-  sed -i 's/enabled=.*/enabled=0/' /etc/default/apport
-  systemctl mask apport.service
+  if [ -f /etc/default/apport ]; then
+    sed -i 's/enabled=.*/enabled=0/' /etc/default/apport
+    systemctl stop apport.service
+    systemctl mask apport.service
+  fi
 
   if dpkg -l | grep -E '^ii.*popularity-contest' 2>/dev/null 1>&2; then
     $APT purge popularity-contest
   fi
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_coredump {
+ f_coredump() {
   if test -f "$COREDUMPCONF"; then
-
-    echo "[$SCRIPT_COUNT] Systemd/coredump.conf"
     sed -i 's/^#Storage=.*/Storage=none/' "$COREDUMPCONF"
     sed -i 's/^#ProcessSizeMax=.*/ProcessSizeMax=0/' "$COREDUMPCONF"
-
-    ((SCRIPT_COUNT++))
   fi
 }
 
-function f_motdnews {
+ f_motdnews() {
   if test -f /etc/default/motd-news; then
-    echo "[$SCRIPT_COUNT] Disable motd-news"
     sed -i 's/ENABLED=.*/ENABLED=0/' /etc/default/motd-news
     systemctl mask motd-news.timer
-
-    ((SCRIPT_COUNT++))
   fi
 }
 
-function f_users {
-  echo "[$SCRIPT_COUNT] Remove users"
-
+ f_users() {
   for users in games gnats irc list news sync uucp; do
     userdel -r "$users" 2> /dev/null
   done
-
-  ((SCRIPT_COUNT++))
 }
 
-function f_suid {
-  echo "[$SCRIPT_COUNT] Remove suid bits"
-
+ f_suid() {
   for p in /bin/fusermount /bin/mount /bin/ping /bin/ping6 /bin/su /bin/umount /usr/bin/bsd-write /usr/bin/chage /usr/bin/chfn /usr/bin/chsh /usr/bin/mlocate /usr/bin/mtr /usr/bin/newgrp /usr/bin/pkexec /usr/bin/traceroute6.iputils /usr/bin/wall /usr/sbin/pppd; do
     if [ -e "$p" ]; then
       oct=$(stat -c "%a" $p |sed 's/^4/0/')
@@ -403,23 +301,18 @@ function f_suid {
     fi
   done
 
-  while read -r suidshells; do
+  grep -v '^#' /etc/shells | while read -r suidshells; do
     if [ -x "$suidshells" ]; then
       chmod -s "$suidshells"
-
-      if [[ $VERBOSE == "Y" ]]; then
-        echo "$suidshells"
-      fi
     fi
-  done <<< "$(grep -v '^#' /etc/shells)"
-
-  ((SCRIPT_COUNT++))
+  done
 }
 
-function f_sshdconfig {
-  echo "[$SCRIPT_COUNT] /etc/ssh/sshd_config"
-
-  $APT install openssh-server
+f_sshdconfig() {
+  if [ ! -f "$SSHDFILE" ]; then
+    echo "$SSHDFILE doesn't exists."
+    return 0
+  fi
 
   awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.tmp
   mv /etc/ssh/moduli.tmp /etc/ssh/moduli
@@ -524,30 +417,54 @@ function f_sshdconfig {
   cp "$SSHDFILE" "/etc/ssh/sshd_config.$(date +%y%m%d)"
   grep -v '#' "/etc/ssh/sshd_config.$(date +%y%m%d)" | sort | uniq > "$SSHDFILE"
   rm "/etc/ssh/sshd_config.$(date +%y%m%d)"
-
-  ((SCRIPT_COUNT++))
 }
 
-f_pre
-f_fstab
-f_aptget_configure
-f_aptget
-f_users
-f_disablemod
-f_disablenet
-f_disablefs
-f_systemdconf
-f_journalctl
-f_prelink
-f_hosts
-f_rootaccess
-f_sysctl
-f_limitsconf
-f_package_remove
-f_resolvedconf
-f_apport
-f_coredump
-f_motdnews
-f_suid
-f_sshdconfig
-f_aptget_clean
+f_package_install() {
+  PACKAGE_INSTALL="acct apparmor-profiles apparmor-utils debsums haveged libpam-tmpdir rkhunter systemd-coredump vlock"
+
+  for deb_install in $PACKAGE_INSTALL; do
+    $APT install --no-install-recommends "$deb_install"
+  done
+}
+
+f_rkhunter() {
+  sed -i 's/^CRON_DAILY_RUN=.*/CRON_DAILY_RUN="yes"/' "$RKHUNTERCONF"
+  sed -i 's/^APT_AUTOGEN=.*/APT_AUTOGEN="yes"/' "$RKHUNTERCONF"
+
+  rkhunter --propupd
+}
+
+if grep -q '^ONBOOT=0$' /etc/default/hardening-config; then
+  f_pre
+  f_fstab
+  f_aptget_configure
+  f_aptget
+  f_package_install
+  f_users
+  f_disablemod
+  f_disablenet
+  f_disablefs
+  f_systemdconf
+  f_journalctl
+  f_prelink
+  f_hosts
+  f_rootaccess
+  f_sysctl
+  f_limitsconf
+  f_package_remove
+  f_resolvedconf
+  f_apport
+  f_coredump
+  f_motdnews
+  f_suid
+  f_sshdconfig
+  f_rkhunter
+  f_aptget_clean
+
+  echo "*** System restart required ***" > /var/run/reboot-required
+  echo "ONBOOT=1" > /etc/default/hardening-config
+fi
+
+if grep -q '^ONBOOT=1$' /etc/default/hardening-config; then
+  systemctl mask /etc/systemd/system/hardening-config.service
+fi
