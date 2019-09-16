@@ -182,7 +182,7 @@ f_pre() {
  f_hosts() {
   echo "sshd : ALL : ALLOW" > /etc/hosts.allow
   echo "ALL: LOCAL, 127.0.0.1" >> /etc/hosts.allow
-  echo "ALL: PARANOID" > /etc/hosts.deny
+  echo "ALL: ALL" > /etc/hosts.deny
   chmod 644 /etc/hosts.allow
   chmod 644 /etc/hosts.deny
 }
@@ -234,7 +234,7 @@ f_package_remove() {
 }
 
 f_disablemod() {
-  MOD="bluetooth bnep btusb firewire-core n_hdlc net-pf-31 pcspkr soundcore thunderbolt usb-midi usb-storage"
+  MOD="bluetooth bnep btusb firewire-core floppy n_hdlc net-pf-31 pcspkr soundcore thunderbolt usb-midi usb-storage"
   for disable in $MOD; do
     if ! grep -q "$disable" "$DISABLEMOD" 2> /dev/null; then
       echo "install $disable /bin/true" >> "$DISABLEMOD"
