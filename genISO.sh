@@ -4,12 +4,12 @@
 # https://nathanpfry.com/how-to-customize-an-ubuntu-installation-disc/
 #
 
-UBUNTUVERSION="ubuntu-18.04.2"
+UBUNTUVERSION="ubuntu-18.04.4"
 CUSTOMNAME="${UBUNTUVERSION}-hardened-amd64.iso"
 VOLID="UBUNTUHARDENED"
 ISOIMAGE="${UBUNTUVERSION}-live-server-amd64.iso"
 ISOURL="http://releases.ubuntu.com/bionic/${ISOIMAGE}"
-SHA256="ea6ccb5b57813908c006f42f7ac8eaa4fc603883a2d07876cf9ed74610ba2f53"
+SHA256="73b8d860e421000a6e35fdefbb0ec859b9385b0974cf8089f5d70a87de72f6b9"
 # SHASUM="http://releases.ubuntu.com/bionic/SHA256SUMS"
 
 if [ "$(id -u)" -ne 0 ]; then
