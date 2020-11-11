@@ -1,8 +1,8 @@
 # hardening-geniso
 
 `hardening-geniso` is a repository containing a template to create a hardened
-[Ubuntu 20.04](http://www.releases.ubuntu.com/20.04/) server
-[Vagrant](https://www.vagrantup.com/) base box.
+[Vagrant](https://www.vagrantup.com/)
+[Ubuntu 20.04](http://www.releases.ubuntu.com/20.04/) server base box.
 
 The script used to make the server a bit more secure is available in the
 [konstruktoid/hardening](https://github.com/konstruktoid/hardening) repository.
