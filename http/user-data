@@ -1,0 +1,45 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US
+  keyboard:
+    layout: en
+    variant: us
+  network:
+    network:
+      version: 2
+      ethernets:
+        id0:
+          match:
+            name: enp*
+          dhcp4: true
+          dhcp-identifier: mac
+        id1:
+          match:
+            name: eth*
+          dhcp4: true
+          dhcp-identifier: mac
+  storage:
+    layout:
+      name: lvm
+  identity:
+    hostname: hardened-focal
+    username: vagrant
+    password: $6$rounds=4096$vQ0FCg/K/tzGK8ni$tR/BjEqUhdDkNwJGVN8T/gCfEFXI0KX.DVXZZEHY36wXHzkeXt/hSWuQ7oqO57PA6vKrDCxe0WGGK0DgQTg7A/
+  ssh:
+    install-server: true
+    allow-pw: true
+  user-data:
+    disable_root: true
+  refresh-installer:
+    update: true
+  apt:
+    preserve_sources_list: false
+    primary:
+        - arches: [default]
+          uri: "http://archive.ubuntu.com/ubuntu"
+    geoip: false
+  late-commands:
+    - "echo 'Defaults:vagrant !requiretty' > /target/etc/sudoers.d/vagrant"
+    - "echo 'vagrant ALL=(ALL) NOPASSWD: ALL' >> /target/etc/sudoers.d/vagrant"
+    - "chmod 440 /target/etc/sudoers.d/vagrant"

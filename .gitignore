@@ -1,4 +1,6 @@
-*.log
+*.box
 *.iso
+*.log
 *.vdi
+packer_cache
 SHA256SUM

@@ -1,9 +1,15 @@
 Vagrant.configure("2") do |config|
-  config.vm.provider "virtualbox" do |v|
-    v.default_nic_type = "Am79C973"
+  config.vbguest.installer_options = { allow_kernel_upgrade: true }
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 2048
+    vb.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"]
+    vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
   end
 
-  config.vm.network "private_network", ip:"10.2.3.55"
-  config.ssh.insert_key = true
-  config.vm.box = "ubuntu/bionic64"
+  config.vm.define "focal" do |focal|
+    focal.vm.hostname = "hardened-focal"
+    focal.vm.box = "ubuntu-hardened/20.04"
+    focal.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
+    focal.vm.synced_folder ".", "/vagrant", disabled: true
+  end
 end

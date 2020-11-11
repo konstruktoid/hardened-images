@@ -1,0 +1,59 @@
+{
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "guest_os_type": "ubuntu-64",
+      "memory": 2048,
+      "name": "{{user `basename`}}-hardened-server",
+      "iso_urls": [
+        "https://releases.ubuntu.com/{{user `release`}}/{{user `basename`}}.{{user `minor_release`}}-live-server-amd64.iso"
+      ],
+      "iso_checksum": "sha256:{{user `iso_checksum`}}",
+      "http_directory": "http",
+      "output_directory": "build",
+      "boot_wait": "5s",
+      "boot_command": [
+        "<enter><enter><f6><esc><wait> ",
+        "autoinstall ds=nocloud-net;seedfrom=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
+        "<enter><wait>"
+      ],
+      "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_pty": true,
+      "ssh_timeout": "1800s",
+      "ssh_handshake_attempts": "300",
+      "guest_additions_mode": "disable"
+    }
+  ],
+  "provisioners": [
+    {
+      "environment_vars": [
+        "HOME_DIR=/home/vagrant",
+        "TMPDIR=/var/tmp"
+      ],
+      "type": "shell",
+      "remote_folder": "/var/tmp",
+      "pause_before": "10s",
+      "expect_disconnect": true,
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "scripts": [
+        "{{template_dir}}/scripts/vagrant.sh",
+        "{{template_dir}}/scripts/hardening.sh",
+        "{{template_dir}}/scripts/cleanup.sh"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "output": "output/{{user `basename`}}-hardened-server.box",
+      "type": "vagrant"
+    }
+  ],
+  "variables": {
+    "release": "20.04",
+    "minor_release": "1",
+    "basename": "ubuntu-{{user `release`}}",
+    "iso_checksum": "443511f6bf12402c12503733059269a2e10dec602916c0a75263e5d990f6bb93"
+  }
+}
