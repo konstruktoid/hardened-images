@@ -7,6 +7,10 @@
 The script used to make the server a bit more secure is available in the
 [konstruktoid/hardening](https://github.com/konstruktoid/hardening) repository.
 
+See [https://www.packer.io/docs/builders](https://www.packer.io/docs/builders)
+and [https://www.packer.io/docs/post-processors](https://www.packer.io/docs/post-processors)
+on how to rewrite the template if you want to use it for another platform.
+
 ## Building the box
 
 ### Requirements
@@ -18,8 +22,9 @@ The script used to make the server a bit more secure is available in the
 
 To build the box, run `bash build_box.sh`.
 
-The script will validate the `Packer` template and the `Vagrantfile` and then
-remove any old versions of the box if present.
+The script will validate the `Packer` template, the `Vagrantfile` and the shell
+scripts. It will then remove any old versions of the box before generating a new
+one.
 
 `packer build -force -timestamp-ui ubuntu-hardened-20.04-packer.json` is the
 `packer` command used if all files are valid.
