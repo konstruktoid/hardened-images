@@ -22,11 +22,11 @@ The script will validate the `Packer` template and the `Vagrantfile` and then
 remove any old versions of the box if present.
 
 `packer build -force -timestamp-ui ubuntu-hardened-20.04-packer.json` is the
-command used to actually build the box.
+`packer` command used if all files are valid.
 
 ## Using the box in a Vagrantfile
 
-```
+```ruby
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-hardened/20.04"
   config.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
