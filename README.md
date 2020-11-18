@@ -1,15 +1,16 @@
-# hardening-geniso
+# Hardened Vagrant Ubuntu 20.04 server base box
 
 `hardening-geniso` is a repository containing a template to create a hardened
 [Vagrant](https://www.vagrantup.com/)
-[Ubuntu 20.04](http://www.releases.ubuntu.com/20.04/) server base box.
+[Ubuntu 20.04](http://www.releases.ubuntu.com/20.04/) server base box, and
+a OVF package.
 
 The script used to make the server a bit more secure is available in the
 [konstruktoid/hardening](https://github.com/konstruktoid/hardening) repository.
 
 See [https://www.packer.io/docs/builders](https://www.packer.io/docs/builders)
 and [https://www.packer.io/docs/post-processors](https://www.packer.io/docs/post-processors)
-on how to rewrite the template if you want to use it for another platform.
+on how to rewrite the template if you want to use it for another platforms.
 
 ## Building the box
 
@@ -63,20 +64,26 @@ end
 ```sh
 .
 ├── LICENSE
+├── README.md
 ├── Vagrantfile
 ├── build_box.sh
 ├── http
 │   ├── meta-data
 │   └── user-data
 ├── output
-│   └── ubuntu-20.04-hardened-server.box
+│   ├── ubuntu-20.04-hardened-server-timestamp-disk001.vmdk
+│   ├── ubuntu-20.04-hardened-server-timestamp.mf
+│   ├── ubuntu-20.04-hardened-server-timestamp.ovf
+│   ├── ubuntu-20.04-hardened-server.box
+│   └── ubuntu-20.04-hardened-server.sha256
 ├── scripts
 │   ├── cleanup.sh
 │   ├── hardening.sh
+│   ├── postproc.sh
 │   └── vagrant.sh
 └── ubuntu-hardened-20.04-packer.json
 
-3 directories, 10 files
+3 directories, 16 files
 ```
 
 ## Contributing
