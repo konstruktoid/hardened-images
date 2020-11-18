@@ -23,7 +23,12 @@
       "ssh_pty": true,
       "ssh_timeout": "1800s",
       "ssh_handshake_attempts": "300",
-      "guest_additions_mode": "disable"
+      "guest_additions_mode": "disable",
+      "export_opts": [
+        "--manifest",
+        "--vsys", "0",
+        "--description", "{{user `basename`}} hardened server"
+      ]
     }
   ],
   "provisioners": [
@@ -46,8 +51,12 @@
   ],
   "post-processors": [
     {
-      "output": "output/{{user `basename`}}-hardened-server.box",
-      "type": "vagrant"
+      "type": "vagrant",
+      "keep_input_artifact": true,
+      "output": "output/{{user `basename`}}-hardened-server.box"
+    },
+    { "type": "shell-local",
+      "scripts": ["./scripts/postproc.sh"]
     }
   ],
   "variables": {
