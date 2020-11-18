@@ -4,3 +4,4 @@
 *.vdi
 packer_cache
 SHA256SUM
+output
