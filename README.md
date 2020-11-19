@@ -1,7 +1,7 @@
 # Hardened Vagrant Ubuntu 20.04 server base box
 
-`hardening-geniso` is a repository containing a template to create a hardened
-[Vagrant](https://www.vagrantup.com/)
+`hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
+template to create a hardened [Vagrant](https://www.vagrantup.com/)
 [Ubuntu 20.04](http://www.releases.ubuntu.com/20.04/) server base box, and
 a OVF package.
 
