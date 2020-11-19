@@ -3,7 +3,7 @@
 export HISTSIZE=0
 export HISTFILESIZE=0
 
-apt-get -y install net-tools procps --no-install-recommends;
+apt-get --assume-yes install net-tools procps --no-install-recommends;
 
 git clone https://github.com/konstruktoid/hardening;
 

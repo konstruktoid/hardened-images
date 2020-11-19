@@ -6,8 +6,8 @@ export HISTFILESIZE=0
 HOME_DIR="/home/vagrant"
 VAGRANT_KEY="https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub"
 
-apt-get -y update;
-apt-get -y dist-upgrade -o Dpkg::Options::="--force-confnew";
+apt-get --assume-yes update;
+apt-get --assume-yes -o Dpkg::Options::="--force-confnew" dist-upgrade;
 
 mkdir -p "${HOME_DIR}/.ssh";
 chmod 0700 "${HOME_DIR}/.ssh";
