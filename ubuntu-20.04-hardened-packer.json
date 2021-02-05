@@ -2,7 +2,6 @@
   "builders": [
     {
       "type": "virtualbox-iso",
-      "guest_os_type": "ubuntu-64",
       "memory": 2048,
       "name": "{{user `basename`}}-hardened-server",
       "iso_urls": [
@@ -11,11 +10,26 @@
       "iso_checksum": "sha256:{{user `iso_checksum`}}",
       "http_directory": "http",
       "output_directory": "build",
-      "boot_wait": "5s",
+      "boot_wait": "2s",
       "boot_command": [
-        "<enter><enter><f6><esc><wait> ",
-        "autoinstall ds=nocloud-net;seedfrom=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
-        "<enter><wait>"
+        "<wait>",
+        "<wait>",
+        "<wait>",
+        "c",
+        "<wait>",
+        "set gfxpayload=keep",
+        "<enter><wait>",
+        "linux /casper/vmlinuz quiet<wait>",
+        " autoinstall<wait>",
+        " ds=nocloud-net<wait>",
+        "\\;s=http://<wait>",
+        "{{.HTTPIP}}<wait>",
+        ":{{.HTTPPort}}/<wait>",
+        " ---",
+        "<enter><wait>",
+        "initrd /casper/initrd<wait>",
+        "<enter><wait>",
+        "boot<enter><wait>"
       ],
       "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
       "ssh_username": "vagrant",
@@ -24,6 +38,12 @@
       "ssh_timeout": "1800s",
       "ssh_handshake_attempts": "300",
       "guest_additions_mode": "disable",
+      "hard_drive_interface": "sata",
+      "disk_size": 10000,
+      "guest_os_type": "Ubuntu_64",
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--firmware", "EFI" ]
+      ],
       "export_opts": [
         "--manifest",
         "--vsys", "0",
@@ -45,7 +65,8 @@
       "scripts": [
         "{{template_dir}}/scripts/vagrant.sh",
         "{{template_dir}}/scripts/hardening.sh",
-        "{{template_dir}}/scripts/cleanup.sh"
+        "{{template_dir}}/scripts/cleanup.sh",
+        "{{template_dir}}/scripts/minimize.sh"
       ]
     }
   ],
@@ -61,8 +82,8 @@
   ],
   "variables": {
     "release": "20.04",
-    "minor_release": "1",
+    "minor_release": "2",
     "basename": "ubuntu-{{user `release`}}",
-    "iso_checksum": "443511f6bf12402c12503733059269a2e10dec602916c0a75263e5d990f6bb93"
+    "iso_checksum": "d1f2bf834bbe9bb43faf16f9be992a6f3935e65be0edece1dee2aa6eb1767423"
   }
 }

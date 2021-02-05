@@ -6,3 +6,4 @@ packer_cache
 SHA256SUM
 output
 scripts/createiso.sh
+build
