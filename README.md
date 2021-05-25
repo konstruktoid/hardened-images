@@ -2,7 +2,7 @@
 
 `hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
 template to create a hardened [Vagrant](https://www.vagrantup.com/)
-[Ubuntu 20.04](http://www.releases.ubuntu.com/20.04/) server base box, and
+[Ubuntu 20.04](https://releases.ubuntu.com/focal/) server base box, and
 a OVF package.
 
 The script used to make the server a bit more secure is available in the
@@ -45,6 +45,11 @@ Vagrant.configure("2") do |config|
     focal.vm.hostname = "hardened-focal"
     focal.vm.box = "ubuntu-hardened/20.04"
     focal.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
+  end
+
+  config.vm.define "focal_remote" do |focal_remote|
+    focal_remote.vm.box = "konstruktoid/focal-hardened"
+    focal_remote.vm.hostname = "focalremote"
   end
 end
 ```
