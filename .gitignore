@@ -2,8 +2,8 @@
 *.iso
 *.log
 *.vdi
-packer_cache
+.vagrant
 SHA256SUM
-output
-scripts/createiso.sh
 build
+output
+packer_cache
