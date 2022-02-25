@@ -82,8 +82,8 @@
   ],
   "variables": {
     "release": "20.04",
-    "minor_release": "3",
+    "minor_release": "4",
     "basename": "ubuntu-{{user `release`}}",
-    "iso_checksum": "f8e3086f3cea0fb3fefb29937ab5ed9d19e767079633960ccb50e76153effc98"
+    "iso_checksum": "28ccdb56450e643bad03bb7bcf7507ce3d8d90e8bf09e38f6bd9ac298a98eaad"
   }
 }
