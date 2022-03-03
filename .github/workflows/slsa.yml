@@ -5,27 +5,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $1}')" >> $GITHUB_ENV
+      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
         shell: bash
 
       - name: checkout repository
         uses: actions/checkout@master
 
       - name: create checksum file
-        run: sha256sum *.json build_box.sh scripts/* > $REPOSITORY_NAME.sha256
+        run: sha256sum *.json build_box.sh scripts/* > ${{ env.REPOSITORY_NAME }}.sha256
 
       - name: upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: $REPOSITORY_NAME
-          path: $REPOSITORY_NAME.sha256
+          name: ${{ env.REPOSITORY_NAME }}
+          path: ${{ env.REPOSITORY_NAME }}.sha256
 
   generate-provenance:
     needs: build
     name: generate build provenance
     runs-on: ubuntu-latest
     steps:
-      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $1}')" >> $GITHUB_ENV
+      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2')" >> $GITHUB_ENV
         shell: bash
 
       - name: download build artifact
@@ -39,4 +39,4 @@ jobs:
       - name: upload provenance
         uses: actions/upload-artifact@v2
         with:
-          path: $REPOSITORY_NAME.provenance
+          path: ${{ env.REPOSITORY_NAME }}.provenance
