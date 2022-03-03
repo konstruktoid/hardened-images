@@ -17,8 +17,7 @@ jobs:
       - name: upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.REPOSITORY_NAME }}
-          path: artifact/${{ env.REPOSITORY_NAME }}.sha256
+          path: ${{ env.REPOSITORY_NAME }}.sha256
 
   generate-provenance:
     needs: build
@@ -39,4 +38,4 @@ jobs:
       - name: upload provenance
         uses: actions/upload-artifact@v2
         with:
-          path: ${{ env.REPOSITORY_NAME }}.provenance
+          path: build.provenance
