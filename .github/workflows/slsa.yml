@@ -27,9 +27,6 @@ jobs:
     name: generate build provenance
     runs-on: ubuntu-latest
     steps:
-      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2')" >> $GITHUB_ENV
-        shell: bash
-
       - name: download build artifact
         uses: actions/download-artifact@v2
 
