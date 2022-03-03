@@ -1,0 +1,30 @@
+name: Build
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: create checksum file
+        run: sha256sum ubuntu-20.04-hardened-packer.json > ubuntu-20.04-hardened-packer.json.sha256
+      - name: upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          path: ubuntu-20.04-hardened-packer.json.sha256
+
+  generate-provenance:
+    needs: build
+    name: Generate build provenance
+    runs-on: ubuntu-latest
+    steps:
+      - name: download build artifact
+        uses: actions/download-artifact@v2
+
+      - name: generate provenance
+        uses: slsa-framework/github-actions-demo@v0.1
+        with:
+          artifact_path: artifact/
+
+      - name: upload provenance
+        uses: actions/upload-artifact@v2
+        with:
+          path: build.provenance
