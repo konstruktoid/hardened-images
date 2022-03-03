@@ -4,6 +4,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@master
       - name: create checksum file
         run: sha256sum ubuntu-20.04-hardened-packer.json > ubuntu-20.04-hardened-packer.json.sha256
       - name: upload artifact
