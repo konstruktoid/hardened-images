@@ -1,20 +1,24 @@
-name: Build
+---
+name: slsa
 on: [workflow_dispatch]
+env:
+  REPOSITORY: hardening-geniso
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - name: create checksum file
-        run: sha256sum ubuntu-20.04-hardened-packer.json > ubuntu-20.04-hardened-packer.json.sha256
+        run: sha256sum *.json build_box.sh scripts/* > $REPOSITORY.sha256
       - name: upload artifact
         uses: actions/upload-artifact@v2
         with:
-          path: ubuntu-20.04-hardened-packer.json.sha256
+          name: $REPOSITORY
+          path: $REPOSITORY.sha256
 
   generate-provenance:
     needs: build
-    name: Generate build provenance
+    name: generate build provenance
     runs-on: ubuntu-latest
     steps:
       - name: download build artifact
@@ -28,4 +32,4 @@ jobs:
       - name: upload provenance
         uses: actions/upload-artifact@v2
         with:
-          path: build.provenance
+          path: $REPOSITORY.provenance
