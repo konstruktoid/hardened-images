@@ -18,7 +18,7 @@ jobs:
         run: sha256sum *.json build_box.sh scripts/* > ${{ env.REPOSITORY_NAME }}.sha256
 
       - name: upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: ${{ env.REPOSITORY_NAME }}.sha256
 
@@ -36,6 +36,6 @@ jobs:
           artifact_path: artifact/
 
       - name: upload provenance
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: build.provenance
