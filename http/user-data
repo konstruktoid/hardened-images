@@ -25,7 +25,7 @@ autoinstall:
   identity:
     hostname: hardened-focal
     username: vagrant
-    password: $6$rounds=4096$vQ0FCg/K/tzGK8ni$tR/BjEqUhdDkNwJGVN8T/gCfEFXI0KX.DVXZZEHY36wXHzkeXt/hSWuQ7oqO57PA6vKrDCxe0WGGK0DgQTg7A/
+    password: $6$rounds=15000$kzRuoYUc97N8A4bK$SeBtYNRLeIV/asRqhNx6KmfFnFyn16OuqzD.sttVLn8y4rLMtIXFSAPbsDJazzlInliJhtiS6LMT5pT408MOr/
   ssh:
     install-server: true
     allow-pw: true
@@ -39,6 +39,8 @@ autoinstall:
         - arches: [default]
           uri: "http://archive.ubuntu.com/ubuntu"
     geoip: false
+  early-commands:
+    - sudo systemctl stop ssh
   late-commands:
     - "echo 'Defaults:vagrant !requiretty' > /target/etc/sudoers.d/vagrant"
     - "echo 'vagrant ALL=(ALL) NOPASSWD: ALL' >> /target/etc/sudoers.d/vagrant"
