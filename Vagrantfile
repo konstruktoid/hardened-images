@@ -6,11 +6,11 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
   end
 
-  config.vm.define "focal" do |focal|
-    focal.vm.hostname = "hardened-focal"
-    focal.vm.box = "ubuntu-hardened/20.04"
-    focal.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
-    focal.vm.provision "shell",
+  config.vm.define "hardened" do |hardened|
+    hardened.vm.hostname = "hardened-focal"
+    hardened.vm.box = "ubuntu-focal/20.04"
+    hardened.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
+    hardened.vm.provision "shell",
       inline: "sed -i 's/MaxAuthTries.*/MaxAuthTries 10/g' /etc/ssh/sshd_config && systemctl restart sshd",
       upload_path: "/var/tmp/vagrant-shell"
   end
