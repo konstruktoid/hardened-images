@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: create checksum file
-        run: sha256sum *.json build_box.sh scripts/* > ${{ env.REPOSITORY_NAME }}.sha256
+        run: sha256sum *.hcl build_box.sh http/* scripts/* > ${{ env.REPOSITORY_NAME }}.sha256
 
       - name: upload artifact
         uses: actions/upload-artifact@v3
