@@ -2,8 +2,8 @@
 
 `hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
 template to create a hardened [Vagrant](https://www.vagrantup.com/)
-[Ubuntu 20.04](https://releases.ubuntu.com/focal/) server base box, and
-a OVF package.
+[Ubuntu 20.04](https://releases.ubuntu.com/focal/) server base box and a `.ova`
+package.
 
 The script used to make the server a bit more secure is available in the
 [konstruktoid/hardening](https://github.com/konstruktoid/hardening) repository.
@@ -80,17 +80,17 @@ end
 │   ├── meta-data
 │   └── user-data
 ├── output
-│   ├── ubuntu-20.04-hardened-server-timestamp-disk001.vmdk
-│   ├── ubuntu-20.04-hardened-server-timestamp.mf
-│   ├── ubuntu-20.04-hardened-server-timestamp.ovf
 │   ├── ubuntu-20.04-hardened-server.box
-│   └── ubuntu-20.04-hardened-server.sha256
+│   ├── ubuntu-20.04-hardened-server.ova
+│   └── ubuntu-focal-hardened-server.sha256
+├── renovate.json
 ├── scripts
 │   ├── cleanup.sh
 │   ├── hardening.sh
+│   ├── minimize.sh
 │   ├── postproc.sh
 │   └── vagrant.sh
-└── ubuntu-hardened-20.04-packer.json
+└── ubuntu-20.04-hardened-packer.pkr.hcl
 
 3 directories, 16 files
 ```
