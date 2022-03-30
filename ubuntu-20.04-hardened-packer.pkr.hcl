@@ -75,6 +75,7 @@ build {
   }
 
   post-processor "shell-local" {
+    environment_vars  = ["BUILD_NAME=${local.basename}-hardened-server"]
     scripts = ["./scripts/postproc.sh"]
   }
 }
