@@ -2,7 +2,7 @@
 
 `hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
 template to create a hardened [Vagrant](https://www.vagrantup.com/)
-[Ubuntu 20.04](https://releases.ubuntu.com/focal/) server base box and a `.ova`
+[Ubuntu](https://releases.ubuntu.com/focal/) server base box and a `.ova`
 package.
 
 The script used to make the server a bit more secure is available in the
@@ -27,8 +27,8 @@ The script will validate the `Packer` template, the `Vagrantfile` and the shell
 scripts. It will then remove any old versions of the box before generating a new
 one.
 
-`packer build -force -timestamp-ui ubuntu-hardened-20.04-packer.json` is the
-`packer` command used if all files are valid.
+`packer build -force -timestamp-ui -var-file <var-file> ubuntu-hardened-packer.pkr.hcl`
+is the `packer` command used if all files are valid.
 
 ## Using the box in a Vagrantfile
 
@@ -82,7 +82,7 @@ end
 ├── output
 │   ├── ubuntu-20.04-hardened-server.box
 │   ├── ubuntu-20.04-hardened-server.ova
-│   └── ubuntu-focal-hardened-server.sha256
+│   └── ubuntu-20.04-hardened-server.sha256
 ├── renovate.json
 ├── scripts
 │   ├── cleanup.sh
@@ -90,9 +90,11 @@ end
 │   ├── minimize.sh
 │   ├── postproc.sh
 │   └── vagrant.sh
-└── ubuntu-20.04-hardened-packer.pkr.hcl
+├── ubuntu-20.04-vars.json
+├── ubuntu-22.04-vars.json
+└── ubuntu-hardened-packer.pkr.hcl
 
-3 directories, 16 files
+3 directories, 18 files
 ```
 
 ## Contributing
