@@ -10,4 +10,4 @@ vagrant box remove ubuntu-hardened/20.04 --all || true
 
 rm -rvf ./output
 
-packer build -force -timestamp-ui ubuntu-20.04-hardened-packer.pkr.hcl || exit 1
+packer build -force -timestamp-ui -var-file ubuntu-20.04-vars.json ubuntu-hardened-packer.pkr.hcl || exit 1

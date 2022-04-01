@@ -1,23 +1,20 @@
-variable "iso_checksum" {
-  type    = string
-  default = "28ccdb56450e643bad03bb7bcf7507ce3d8d90e8bf09e38f6bd9ac298a98eaad"
+variable "release" {
+  type = string
 }
 
 variable "minor_release" {
-  type    = string
-  default = "4"
+  type = string
 }
 
-variable "release" {
-  type    = string
-  default = "20.04"
+variable "iso_checksum" {
+  type = string
 }
 
 locals {
   basename = "ubuntu-${var.release}"
 }
 
-source "virtualbox-iso" "ubuntu-focal-hardened-server" {
+source "virtualbox-iso" "ubuntu-hardened-server" {
   boot_command = [
     "<esc><esc><esc>",
     "set gfxpayload=keep<enter>",
@@ -54,7 +51,7 @@ source "virtualbox-iso" "ubuntu-focal-hardened-server" {
 }
 
 build {
-  sources = ["source.virtualbox-iso.ubuntu-focal-hardened-server"]
+  sources = ["source.virtualbox-iso.ubuntu-hardened-server"]
 
   provisioner "shell" {
     environment_vars  = ["HOME_DIR=/home/vagrant", "TMPDIR=/var/tmp"]
@@ -75,7 +72,7 @@ build {
   }
 
   post-processor "shell-local" {
-    environment_vars  = ["BUILD_NAME=${local.basename}-hardened-server"]
-    scripts = ["./scripts/postproc.sh"]
+    environment_vars = ["BUILD_NAME=${local.basename}-hardened-server"]
+    scripts          = ["./scripts/postproc.sh"]
   }
 }

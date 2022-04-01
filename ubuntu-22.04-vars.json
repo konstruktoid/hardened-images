@@ -1,0 +1,6 @@
+# This won't work until there's a release.minor_release available
+{
+  "release": "22.04",
+  "minor_release": "beta",
+  "iso_checksum": "39fdd5f7e868ab7981b492a8887dbaec85acf798b209162a37893cb4b209a26b"
+}
