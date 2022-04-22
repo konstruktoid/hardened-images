@@ -5,6 +5,13 @@
 export HISTSIZE=0
 export HISTFILESIZE=0
 
+systemd-tmpfiles --clean
+systemd-tmpfiles --remove
+
+rm -rf /etc/ansible/roles
+
+rm -rf /etc/apt/sources.list.d/*
+
 dpkg --list | awk '{ print $2 }' | grep 'linux-headers' | xargs apt-get --assume-yes purge;
 dpkg --list | awk '{ print $2 }' | grep 'linux-image-.*-generic' | grep -v "$(uname -r)" | xargs apt-get --assume-yes purge;
 dpkg --list | awk '{ print $2 }' | grep 'linux-modules-.*-generic' | grep -v "$(uname -r)" | xargs apt-get --assume-yes purge;
@@ -21,6 +28,8 @@ apt-get --assume-yes purge popularity-contest installation-report command-not-fo
 apt-get --assume-yes purge fonts-ubuntu-console || true;
 
 apt-get --assume-yes purge command-not-found-data || true;
+
+apt-get --assume-yes purge ansible || true;
 
 cat <<_EOF_ | cat >> /etc/dpkg/dpkg.cfg.d/excludes
 #BENTO-BEGIN
@@ -42,6 +51,8 @@ find /var/cache -type f -exec rm -rf {} \;
 find /var/log -type f -exec truncate --size=0 {} \;
 
 truncate -s 0 /etc/machine-id
+
+rm -rf /etc/ansible
 
 rm -rf /tmp/* /var/tmp/*
 
