@@ -3,28 +3,16 @@
 export HISTSIZE=0
 export HISTFILESIZE=0
 
-apt-get --assume-yes install net-tools procps --no-install-recommends;
+add-apt-repository --yes ppa:ansible/ansible
+apt-get --assume-yes update
+apt-get --assume-yes --with-new-pkgs upgrade
+apt-get --assume-yes --no-install-recommends install ansible
 
-git clone https://github.com/konstruktoid/hardening;
+cd /tmp || exit 1
 
-cd ./hardening || exit 1
+ansible-playbook -i '127.0.0.1,' -c local ./local.yml
 
-sed -i.bak -e "s/SSH_GRPS=.*/SSH_GRPS='vagrant'/" -e "s/^CHANGEME=.*/CHANGEME='changed'/" ./ubuntu.cfg;
-sed -i.bak 's/.*f_aide_/# f_aide_/g' ./ubuntu.sh;
-
-bash ./ubuntu.sh
-
-cd .. || exit 1
-
-rm -rf ./hardening
-
-sed -i.bak 's/^/# /g' /etc/default/grub.d/99-hardening-lockdown.cfg
-sed -i.bak "s/myhostname =.*/myhostname = hardened.local/g" /etc/postfix/main.cf;
-sed -i.bak '/fat/d' /etc/modprobe.d/disable*;
-
-ufw allow ssh;
-
-update-grub
+ufw disable;
 systemctl restart sshd
 
 find /etc -name '*.bak' -exec rm -f {} \;
