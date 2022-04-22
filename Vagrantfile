@@ -10,8 +10,5 @@ Vagrant.configure("2") do |config|
     hardened.vm.hostname = "hardened-focal"
     hardened.vm.box = "ubuntu-focal/20.04"
     hardened.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
-    hardened.vm.provision "shell",
-      inline: "sed -i 's/MaxAuthTries.*/MaxAuthTries 10/g' /etc/ssh/sshd_config && systemctl restart sshd",
-      upload_path: "/var/tmp/vagrant-shell"
   end
 end
