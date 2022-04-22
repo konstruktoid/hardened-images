@@ -5,8 +5,11 @@ template to create a hardened [Vagrant](https://www.vagrantup.com/)
 [Ubuntu](https://releases.ubuntu.com/focal/) server base box and a `.ova`
 package.
 
-The script used to make the server a bit more secure is available in the
-[konstruktoid/hardening](https://github.com/konstruktoid/hardening) repository.
+The Ansible role used to make the server a bit more secure is available in the
+[konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
+repository.
+
+The role is installed and configured using [config/local.yml](./config/local.yml).
 
 See [https://www.packer.io/docs/builders](https://www.packer.io/docs/builders)
 and [https://www.packer.io/docs/post-processors](https://www.packer.io/docs/post-processors)
