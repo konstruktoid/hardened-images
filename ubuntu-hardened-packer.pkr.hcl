@@ -47,14 +47,19 @@ source "virtualbox-iso" "ubuntu-hardened-server" {
   ssh_pty                = true
   ssh_timeout            = "1800s"
   ssh_username           = "vagrant"
-  vboxmanage             = [["modifyvm", "{{.Name}}", "--firmware", "EFI"]]
+  vboxmanage             = [["modifyvm", "{{.Name}}", "--firmware", "EFI"], ["modifyvm", "{{ .Name }}", "--uart1", "off" ]]
 }
 
 build {
   sources = ["source.virtualbox-iso.ubuntu-hardened-server"]
 
+  provisioner "file" {
+    sources     = ["config/ansible.cfg", "config/local.yml"]
+    destination = "/tmp/"
+  }
+
   provisioner "shell" {
-    environment_vars  = ["HOME_DIR=/home/vagrant", "TMPDIR=/var/tmp"]
+    environment_vars  = ["ANSIBLE_CONFIG=/tmp/ansible.cfg", "HOME_DIR=/home/vagrant", "TMPDIR=/var/tmp"]
     execute_command   = "echo 'vagrant' | {{ .Vars }} sudo -S -E sh -eux '{{ .Path }}'"
     expect_disconnect = true
     pause_before      = "10s"
