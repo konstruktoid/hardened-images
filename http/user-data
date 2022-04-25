@@ -23,7 +23,7 @@ autoinstall:
     layout:
       name: lvm
   identity:
-    hostname: hardened-focal
+    hostname: geniso-hardened
     username: vagrant
     password: $6$rounds=15000$kzRuoYUc97N8A4bK$SeBtYNRLeIV/asRqhNx6KmfFnFyn16OuqzD.sttVLn8y4rLMtIXFSAPbsDJazzlInliJhtiS6LMT5pT408MOr/
   ssh:
