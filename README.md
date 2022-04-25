@@ -48,9 +48,10 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "focal" do |focal|
     focal.vm.hostname = "hardened-focal"
-    focal.vm.box = "ubuntu-hardened/20.04"
+    focal.vm.box = "ubuntu-focal/20.04"
     focal.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
   end
+end
 ```
 
 ### Remote box
