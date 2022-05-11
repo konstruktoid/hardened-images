@@ -1,9 +1,12 @@
-# Hardened Vagrant Ubuntu 20.04 server base box
+# Hardened Vagrant Ubuntu server base box
 
 `hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
 template to create a hardened [Vagrant](https://www.vagrantup.com/)
-[Ubuntu](https://releases.ubuntu.com/focal/) server base box and a `.ova`
+[Ubuntu](https://releases.ubuntu.com) server base box and a `.ova`
 package.
+
+[20.04 LTS (Focal Fossa)](https://releases.ubuntu.com/focal/) and
+[22.04 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/) are supported.
 
 The Ansible role used to make the server a bit more secure is available in the
 [konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
@@ -49,7 +52,13 @@ Vagrant.configure("2") do |config|
   config.vm.define "focal" do |focal|
     focal.vm.hostname = "hardened-focal"
     focal.vm.box = "ubuntu-focal/20.04"
-    focal.vm.box_url = "file://output/ubuntu-20.04-hardened-server.box"
+    focal.vm.box_url = "file://output/ubuntu-20.04.4-hardened-server.box"
+  end
+
+  config.vm.define "jammy" do |jammy|
+    jammy.vm.hostname = "hardened-jammy"
+    jammy.vm.box = "ubuntu-jammy/22.04"
+    jammy.vm.box_url = "file://output/ubuntu-22.04-hardened-server.box"
   end
 end
 ```
@@ -80,13 +89,18 @@ end
 ├── README.md
 ├── Vagrantfile
 ├── build_box.sh
+├── config
+│   ├── ansible.cfg
+│   └── local.yml
 ├── http
 │   ├── meta-data
 │   └── user-data
 ├── output
-│   ├── ubuntu-20.04-hardened-server.box
-│   ├── ubuntu-20.04-hardened-server.ova
-│   └── ubuntu-20.04-hardened-server.sha256
+│   ├── ubuntu-20.04.4-hardened-server.box
+│   ├── ubuntu-20.04.4-hardened-server.ova
+│   ├── ubuntu-22.04-hardened-server.box
+│   ├── ubuntu-22.04-hardened-server.ova
+│   └── ubuntu-hardened-server.sha256
 ├── renovate.json
 ├── scripts
 │   ├── cleanup.sh
@@ -98,7 +112,7 @@ end
 ├── ubuntu-22.04-vars.json
 └── ubuntu-hardened-packer.pkr.hcl
 
-3 directories, 18 files
+4 directories, 22 files
 ```
 
 ## Contributing

@@ -2,10 +2,6 @@ variable "release" {
   type = string
 }
 
-variable "minor_release" {
-  type = string
-}
-
 variable "iso_checksum" {
   type = string
 }
@@ -16,7 +12,7 @@ locals {
 
 source "virtualbox-iso" "ubuntu-hardened-server" {
   boot_command = [
-    "<esc><esc><esc>",
+    "c<wait>",
     "set gfxpayload=keep<enter>",
     "linux /casper/vmlinuz ",
     "\"ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/\" ",
@@ -37,7 +33,7 @@ source "virtualbox-iso" "ubuntu-hardened-server" {
   hard_drive_interface   = "sata"
   http_directory         = "http"
   iso_checksum           = "sha256:${var.iso_checksum}"
-  iso_urls               = ["https://releases.ubuntu.com/${var.release}/${local.basename}.${var.minor_release}-live-server-amd64.iso"]
+  iso_urls               = ["https://releases.ubuntu.com/${var.release}/${local.basename}-live-server-amd64.iso"]
   memory                 = 2048
   output_directory       = "build"
   output_filename        = "${local.basename}-hardened-server"
@@ -77,7 +73,7 @@ build {
   }
 
   post-processor "shell-local" {
-    environment_vars = ["BUILD_NAME=${local.basename}-hardened-server"]
+    environment_vars = ["BUILD_NAME=ubuntu-hardened-server"]
     scripts          = ["./scripts/postproc.sh"]
   }
 }

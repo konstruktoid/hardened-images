@@ -1,4 +1,5 @@
 #cloud-config
+package_upgrade: true
 autoinstall:
   version: 1
   locale: en_US
