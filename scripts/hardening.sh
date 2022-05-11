@@ -5,7 +5,6 @@ export HISTFILESIZE=0
 
 add-apt-repository --yes ppa:ansible/ansible
 apt-get --assume-yes update
-apt-get --assume-yes --with-new-pkgs upgrade
 apt-get --assume-yes --no-install-recommends install ansible
 
 cd /tmp || exit 1
