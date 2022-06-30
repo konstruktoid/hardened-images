@@ -119,6 +119,7 @@ end
 │   └── ubuntu-hardened-server.sha256
 ├── renovate.json
 ├── scripts
+│   ├── aws.sh
 │   ├── cleanup.sh
 │   ├── hardening.sh
 │   ├── minimize.sh
@@ -126,9 +127,11 @@ end
 │   └── vagrant.sh
 ├── ubuntu-20.04-vars.json
 ├── ubuntu-22.04-vars.json
+├── ubuntu-aws-vars.json
+├── ubuntu-hardened-aws.pkr.hcl
 └── ubuntu-hardened-packer.pkr.hcl
 
-4 directories, 22 files
+4 directories, 25 files
 ```
 
 ## Contributing
