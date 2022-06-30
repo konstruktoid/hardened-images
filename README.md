@@ -1,9 +1,12 @@
 # Hardened Vagrant Ubuntu server base box
 
 `hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
-template to create a hardened [Vagrant](https://www.vagrantup.com/)
-[Ubuntu](https://releases.ubuntu.com) server base box and a `.ova`
-package.
+template to create a hardened [Ubuntu](https://releases.ubuntu.com) server.
+
+There is are templates available for creating a
+- [Vagrant](https://www.vagrantup.com/) server base box
+- `.ova` package
+- [Amazon Machine Image (AMI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html)
 
 [20.04 LTS (Focal Fossa)](https://releases.ubuntu.com/focal/) and
 [22.04 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/) are supported.
@@ -25,9 +28,11 @@ on how to rewrite the template if you want to use it for another platforms.
 - [Packer](https://www.packer.io/)
 - [VirtualBox](https://www.virtualbox.org)
 
-#### Using `packer`
+### Using `packer`
 
-To build the box, run `bash build_box.sh`.
+#### Local files
+
+To build the Vagrant boxes and the `.ova` files , run `bash build_box.sh`.
 
 The script will validate the `Packer` template, the `Vagrantfile` and the shell
 scripts. It will then remove any old versions of the box before generating a new
@@ -35,6 +40,17 @@ one.
 
 `packer build -force -timestamp-ui -var-file <var-file> ubuntu-hardened-packer.pkr.hcl`
 is the `packer` command used if all files are valid.
+
+#### Amazon Web Services
+
+Ensure that the correct `release` and `aws_region` are set in
+`ubuntu-aws-vars.json` before validating the configuration and building the
+Amazon Machine Image.
+
+```sh
+packer validate -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
+packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
+```
 
 ## Using the box in a Vagrantfile
 
