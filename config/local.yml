@@ -22,7 +22,7 @@
         block_blacklisted: true
         install_aide: false
         sshd_admin_net: "0.0.0.0/0"
-        sshd_allow_groups: "vagrant"
+        sshd_allow_groups: "ubuntu vagrant"
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
         suid_sgid_permissions: false
