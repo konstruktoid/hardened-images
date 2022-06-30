@@ -1,5 +1,6 @@
 #!/bin/bash -eux
 
+export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
 export HISTFILESIZE=0
 

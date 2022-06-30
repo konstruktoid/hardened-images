@@ -2,6 +2,7 @@
 # https://github.com/chef/bento/blob/master/packer_templates/ubuntu/scripts/cleanup.sh
 # https://github.com/chef/bento/blob/master/packer_templates/_common/minimize.sh
 
+export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
 export HISTFILESIZE=0
 
