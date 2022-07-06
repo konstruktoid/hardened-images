@@ -3,7 +3,7 @@
 `hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
 template to create a hardened [Ubuntu](https://releases.ubuntu.com) server.
 
-There is are templates available for creating a
+There are templates available for creating a
 - [Vagrant](https://www.vagrantup.com/) server base box
 - `.ova` package
 - [Amazon Machine Image (AMI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html)
@@ -38,7 +38,7 @@ The script will validate the `Packer` template, the `Vagrantfile` and the shell
 scripts. It will then remove any old versions of the box before generating a new
 one.
 
-`packer build -force -timestamp-ui -var-file <var-file> ubuntu-hardened-packer.pkr.hcl`
+`packer build -force -timestamp-ui -var-file <var-file> ubuntu-hardened-box.pkr.hcl`
 is the `packer` command used if all files are valid.
 
 #### Amazon Web Services
@@ -51,6 +51,14 @@ Amazon Machine Image.
 packer validate -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 ```
+
+### Verification
+
+There's a [SLSA](https://slsa.dev/) artifact present under the
+[slsa action workflow](https://github.com/konstruktoid/hardening-geniso/actions/workflows/slsa.yml).
+
+Verification of the built local files can be done using
+`sha256sum -c ubuntu-hardened-server.sha256` or using similar commands.
 
 ## Using the box in a Vagrantfile
 
@@ -129,7 +137,7 @@ end
 ├── ubuntu-22.04-vars.json
 ├── ubuntu-aws-vars.json
 ├── ubuntu-hardened-aws.pkr.hcl
-└── ubuntu-hardened-packer.pkr.hcl
+└── ubuntu-hardened-box.pkr.hcl
 
 4 directories, 25 files
 ```
