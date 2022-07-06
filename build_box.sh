@@ -23,6 +23,6 @@ packer_build()(
 )
 
 find . -name 'ubuntu-2[0-9].*-vars.json' -type f | while read -r VARS; do
-  packer_validate "${VARS}" ubuntu-hardened-packer.pkr.hcl
-  packer_build "${VARS}" ubuntu-hardened-packer.pkr.hcl
+  packer_validate "${VARS}" ubuntu-hardened-box.pkr.hcl
+  packer_build "${VARS}" ubuntu-hardened-box.pkr.hcl
 done
