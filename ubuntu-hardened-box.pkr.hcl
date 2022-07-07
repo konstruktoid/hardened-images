@@ -1,9 +1,11 @@
 variable "release" {
-  type = string
+  description = "The Ubuntu release to use, YY-MM format."
+  type        = string
 }
 
 variable "iso_checksum" {
-  type = string
+  description = "The SHA256 ISO checksum."
+  type        = string
 }
 
 locals {
@@ -43,7 +45,7 @@ source "virtualbox-iso" "ubuntu-hardened-server" {
   ssh_pty                = true
   ssh_timeout            = "1800s"
   ssh_username           = "vagrant"
-  vboxmanage             = [["modifyvm", "{{.Name}}", "--firmware", "EFI"], ["modifyvm", "{{ .Name }}", "--uart1", "off" ]]
+  vboxmanage             = [["modifyvm", "{{.Name}}", "--firmware", "EFI"], ["modifyvm", "{{ .Name }}", "--uart1", "off"]]
 }
 
 build {
