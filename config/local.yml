@@ -25,6 +25,8 @@
         sshd_allow_groups: "ubuntu vagrant"
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
+        sshd_use_dns: "no"
+        sshd_permit_root_login: "no"
         suid_sgid_permissions: false
 
     - name: remove git
