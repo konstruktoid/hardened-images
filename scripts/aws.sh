@@ -1,4 +1,5 @@
 #!/bin/bash -eux
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/building-shared-amis.html
 
 export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
@@ -33,5 +34,9 @@ rm -rvf /tmp/* /var/tmp/*
 rm -vf /var/lib/systemd/random-seed
 
 rm -vf /root/.wget-hsts
+
+rm -vf /etc/ssh/*_key /etc/ssh/*_key.pub
+
+rm -vf ~/.*history
 
 export HISTSIZE=0

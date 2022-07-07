@@ -1,13 +1,16 @@
 variable "aws_region" {
-  type = string
+  description = "The AWS Region to use."
+  type        = string
 }
 
 variable "instance_type" {
-  type = string
+  description = "The Amazon EC2 Instance Type to use."
+  type        = string
 }
 
 variable "release" {
-  type = string
+  description = "The Ubuntu release to use, YY-MM format."
+  type        = string
 }
 
 locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
