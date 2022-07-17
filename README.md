@@ -1,7 +1,7 @@
-# Hardened Vagrant Ubuntu server base box
+# Hardened Ubuntu server templates
 
-`hardening-geniso` is a repository containing a [Packer](https://www.packer.io/)
-template to create a hardened [Ubuntu](https://releases.ubuntu.com) server.
+This is a repository containing [Packer](https://www.packer.io/)
+templates to create a hardened [Ubuntu](https://releases.ubuntu.com) server.
 
 There are templates available for creating a
 - [Vagrant](https://www.vagrantup.com/) server base box
@@ -21,16 +21,15 @@ See [https://www.packer.io/docs/builders](https://www.packer.io/docs/builders)
 and [https://www.packer.io/docs/post-processors](https://www.packer.io/docs/post-processors)
 on how to rewrite the template if you want to use it for another platforms.
 
-## Building the box
-
-### Requirements
-
-- [Packer](https://www.packer.io/)
-- [VirtualBox](https://www.virtualbox.org)
+## Usage
 
 ### Using `packer`
 
 #### Local files
+
+Requires [Packer](https://www.packer.io/),
+[Vagrant](https://www.vagrantup.com/) and
+[VirtualBox](https://www.virtualbox.org).
 
 To build the Vagrant boxes and the `.ova` files , run `bash build_box.sh`.
 
@@ -42,6 +41,9 @@ one.
 is the `packer` command used if all files are valid.
 
 #### Amazon Web Services
+
+Requires [Packer](https://www.packer.io/) and a
+[Amazon Web Services](https://aws.amazon.com/) account.
 
 Ensure that the correct `release` and `aws_region` are set in
 `ubuntu-aws-vars.json` before validating the configuration and building the
