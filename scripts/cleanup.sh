@@ -46,6 +46,8 @@ find /var/cache -type f -exec rm -rvf {} \;
 
 find /var/log -type f -exec truncate --size=0 {} \;
 
+find /home -type d -name '.ansible' -exec rm -rvf {} \; || true
+
 truncate -s 0 /etc/machine-id
 
 rm -rvf /etc/ansible
