@@ -40,6 +40,7 @@ source "virtualbox-iso" "ubuntu-hardened-server" {
   output_directory       = "build"
   output_filename        = "${local.basename}-hardened-server"
   shutdown_command       = "echo 'vagrant' | sudo -S shutdown -P now"
+  ssh_clear_authorized_keys = "true"
   ssh_handshake_attempts = "300"
   ssh_password           = "vagrant"
   ssh_pty                = true

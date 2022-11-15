@@ -9,6 +9,10 @@ VAGRANT_KEY="https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vag
 
 apt-get --assume-yes update
 
+rm -vf /etc/ssh/*_key /etc/ssh/*_key.pub
+
+dpkg-reconfigure openssh-server
+
 mkdir -p "${HOME_DIR}/.ssh";
 chmod 0700 "${HOME_DIR}/.ssh";
 curl -sSL "${VAGRANT_KEY}" > "${HOME_DIR}/.ssh/authorized_keys";
