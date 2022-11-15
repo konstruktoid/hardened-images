@@ -57,7 +57,7 @@ packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pk
 ### Verification
 
 There's a [SLSA](https://slsa.dev/) artifact present under the
-[slsa action workflow](https://github.com/konstruktoid/hardening-geniso/actions/workflows/slsa.yml).
+[slsa action workflow](https://github.com/konstruktoid/hardened-images/actions/workflows/slsa.yml).
 
 Verification of the built local files can be done using
 `sha256sum -c ubuntu-hardened-server.sha256` or using similar commands.
