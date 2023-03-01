@@ -1,21 +1,28 @@
 ---
-- hosts: localhost
+- name: Checkout and configure konstruktoid.hardening
+  hosts: localhost
   any_errors_fatal: true
   tasks:
-    - name: install git
+    - name: Install git
       become: true
       ansible.builtin.package:
         name: git
         state: present
 
-    - name: checkout konstruktoid.hardening
+    - name: Checkout konstruktoid.hardening
       become: true
       ansible.builtin.git:
         repo: 'https://github.com/konstruktoid/ansible-role-hardening'
         dest: /etc/ansible/roles/konstruktoid.hardening
         version: master
 
-    - name: include the hardening role
+    - name: Remove git
+      become: true
+      ansible.builtin.package:
+        name: git
+        state: absent
+
+    - name: Include the hardening role
       ansible.builtin.include_role:
         name: konstruktoid.hardening
       vars:
@@ -28,10 +35,4 @@
         sshd_use_dns: "no"
         sshd_permit_root_login: "no"
         suid_sgid_permissions: false
-
-    - name: remove git
-      become: true
-      ansible.builtin.package:
-        name: git
-        state: absent
 ...
