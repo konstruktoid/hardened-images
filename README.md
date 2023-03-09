@@ -27,6 +27,10 @@ on how to rewrite the template if you want to use it for another platforms.
 
 #### Local files
 
+> **Note**
+>
+> There are various issues when building a [Ubuntu release using subiquity](https://github.com/hashicorp/packer/issues/9115)
+
 Requires [Packer](https://www.packer.io/),
 [Vagrant](https://www.vagrantup.com/) and
 [VirtualBox](https://www.virtualbox.org).
