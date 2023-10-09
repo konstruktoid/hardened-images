@@ -12,6 +12,15 @@ locals {
   basename = "ubuntu-${var.release}"
 }
 
+packer {
+  required_plugins {
+    vagrant = {
+      version = ">= 1.0.2"
+      source  = "github.com/hashicorp/vagrant"
+    }
+  }
+}
+
 source "virtualbox-iso" "ubuntu-hardened-server" {
   boot_command = [
     "c<wait>",
