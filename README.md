@@ -25,6 +25,21 @@ on how to rewrite the template if you want to use it for another platforms.
 
 ### Using `packer`
 
+#### Amazon Web Services
+
+Requires [Packer](https://www.packer.io/) and a
+[Amazon Web Services](https://aws.amazon.com/) account.
+
+Ensure that the correct `release` and `aws_region` are set in
+`ubuntu-aws-vars.json` before validating the configuration and building the
+Amazon Machine Image.
+
+```sh
+packer init -upgrade -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
+packer validate -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
+packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
+```
+
 #### Local files
 
 > **Note**
@@ -43,20 +58,6 @@ one.
 
 `packer build -force -timestamp-ui -var-file <var-file> ubuntu-hardened-box.pkr.hcl`
 is the `packer` command used if all files are valid.
-
-#### Amazon Web Services
-
-Requires [Packer](https://www.packer.io/) and a
-[Amazon Web Services](https://aws.amazon.com/) account.
-
-Ensure that the correct `release` and `aws_region` are set in
-`ubuntu-aws-vars.json` before validating the configuration and building the
-Amazon Machine Image.
-
-```sh
-packer validate -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
-packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
-```
 
 ### Verification
 
