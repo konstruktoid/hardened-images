@@ -15,6 +15,15 @@ variable "release" {
 
 locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
 
+packer {
+  required_plugins {
+    amazon = {
+      version = ">= 1.2.6"
+      source  = "github.com/hashicorp/amazon"
+    }
+  }
+}
+
 source "amazon-ebs" "hardened" {
   ami_name      = "hardened-ubuntu-${local.timestamp}"
   instance_type = var.instance_type

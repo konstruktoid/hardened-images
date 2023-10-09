@@ -6,6 +6,8 @@ shellcheck -x -s bash -f gcc scripts/* || exit 1
 
 vagrant destroy --force
 
+packer init -upgrade ubuntu-hardened-box.pkr.hcl
+
 grep -o 'box = ".*"' Vagrantfile | awk -F '"' '{print $2}' | while read -r BOX; do
   vagrant box remove "${BOX}" --all || true
 done
