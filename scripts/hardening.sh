@@ -19,7 +19,6 @@ systemctl restart sshd
 find /etc -name '*.bak' -exec rm -f {} \;
 
 if id vagrant; then
-  sed -i 's/AllowUsers.*/AllowUsers vagrant/g' /etc/ssh/sshd_config.d/01-hardening.conf
   chage --maxdays 365 vagrant
   chage --mindays 1 vagrant
 fi
