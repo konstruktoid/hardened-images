@@ -3,9 +3,6 @@ package_upgrade: true
 autoinstall:
   version: 1
   locale: en_US
-  keyboard:
-    layout: en
-    variant: us
   network:
     network:
       version: 2
