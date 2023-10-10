@@ -35,6 +35,8 @@ Ensure that the correct `release` and `aws_region` are set in
 Amazon Machine Image.
 
 ```sh
+export AWS_ACCESS_KEY_ID="<YOUR_AWS_ACCESS_KEY_ID>"
+export AWS_SECRET_ACCESS_KEY="<YOUR_AWS_SECRET_ACCESS_KEY>"
 packer init -upgrade -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 packer validate -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
