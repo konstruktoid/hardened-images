@@ -10,6 +10,7 @@ variable "iso_checksum" {
 
 locals {
   basename = "ubuntu-${var.release}"
+  major = substr("${var.release}", 0, 5)
 }
 
 packer {
@@ -17,6 +18,10 @@ packer {
     vagrant = {
       version = ">= 1.0.2"
       source  = "github.com/hashicorp/vagrant"
+    }
+    virtualbox = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/virtualbox"
     }
   }
 }
@@ -44,7 +49,7 @@ source "virtualbox-iso" "ubuntu-hardened-server" {
   hard_drive_interface   = "sata"
   http_directory         = "http"
   iso_checksum           = "sha256:${var.iso_checksum}"
-  iso_urls               = ["https://releases.ubuntu.com/${var.release}/${local.basename}-live-server-amd64.iso"]
+  iso_urls               = ["https://releases.ubuntu.com/${local.major}/${local.basename}-live-server-amd64.iso"]
   memory                 = 2048
   output_directory       = "build"
   output_filename        = "${local.basename}-hardened-server"
