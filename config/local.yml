@@ -12,7 +12,7 @@
     - name: Checkout konstruktoid.hardening
       become: true
       ansible.builtin.git:
-        repo: 'https://github.com/konstruktoid/ansible-role-hardening'
+        repo: https://github.com/konstruktoid/ansible-role-hardening
         dest: /etc/ansible/roles/konstruktoid.hardening
         version: master
 
@@ -30,10 +30,10 @@
         block_blacklisted: false
         install_aide: false
         sshd_admin_net: "0.0.0.0/0"
-        sshd_allow_groups: "ubuntu vagrant"
+        sshd_allow_groups: ubuntu vagrant
+        sshd_allow_users: false
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
         sshd_use_dns: "no"
         sshd_permit_root_login: "no"
         suid_sgid_permissions: false
-...
