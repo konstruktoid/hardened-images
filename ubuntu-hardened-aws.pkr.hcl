@@ -13,7 +13,9 @@ variable "release" {
   type        = string
 }
 
-locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
+locals {
+  timestamp = regex_replace(timestamp(), "[- TZ:]", "")
+}
 
 packer {
   required_plugins {

@@ -69,8 +69,6 @@ Verification of the built local files can be done using
 
 ## Using the box in a Vagrantfile
 
-### Local box
-
 ```ruby
 Vagrant.configure("2") do |config|
   config.vbguest.installer_options = { allow_kernel_upgrade: true }
@@ -94,31 +92,10 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-### Remote box
-
-```ruby
-Vagrant.configure("2") do |config|
-  config.vbguest.installer_options = { allow_kernel_upgrade: true }
-  config.vm.provider "virtualbox" do |vb|
-    vb.memory = 2048
-    vb.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"]
-    vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
-  end
-
-  config.vm.define "focal_remote" do |focal_remote|
-    focal_remote.vm.box = "konstruktoid/focal-hardened"
-    focal_remote.vm.hostname = "focalremote"
-  end
-end
-```
-
 ## Repository structure
 
 ```sh
 .
-├── LICENSE
-├── README.md
-├── Vagrantfile
 ├── build_box.sh
 ├── config
 │   ├── ansible.cfg
@@ -126,12 +103,14 @@ end
 ├── http
 │   ├── meta-data
 │   └── user-data
+├── LICENSE
 ├── output
-│   ├── ubuntu-20.04.4-hardened-server.box
-│   ├── ubuntu-20.04.4-hardened-server.ova
-│   ├── ubuntu-22.04-hardened-server.box
-│   ├── ubuntu-22.04-hardened-server.ova
+│   ├── ubuntu-20.04.6-hardened-server.box
+│   ├── ubuntu-20.04.6-hardened-server.ova
+│   ├── ubuntu-22.04.3-hardened-server.box
+│   ├── ubuntu-22.04.3-hardened-server.ova
 │   └── ubuntu-hardened-server.sha256
+├── README.md
 ├── renovate.json
 ├── scripts
 │   ├── aws.sh
@@ -140,13 +119,15 @@ end
 │   ├── minimize.sh
 │   ├── postproc.sh
 │   └── vagrant.sh
+├── SECURITY.md
 ├── ubuntu-20.04-vars.json
 ├── ubuntu-22.04-vars.json
 ├── ubuntu-aws-vars.json
 ├── ubuntu-hardened-aws.pkr.hcl
-└── ubuntu-hardened-box.pkr.hcl
+├── ubuntu-hardened-box.pkr.hcl
+└── Vagrantfile
 
-4 directories, 25 files
+4 directories, 26 files
 ```
 
 ## Contributing
