@@ -29,9 +29,12 @@
         auditd_apply_audit_rules: false
         block_blacklisted: false
         install_aide: false
-        sshd_admin_net: "0.0.0.0/0"
-        sshd_allow_groups: ubuntu vagrant
-        sshd_allow_users: false
+        sshd_admin_net:
+          - "0.0.0.0/0"
+        sshd_allow_groups:
+          - ubuntu
+          - vagrant
+        sshd_allow_users: []
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
         sshd_use_dns: "no"
