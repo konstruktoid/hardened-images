@@ -42,6 +42,10 @@ rm -rvf /usr/share/doc/*
 apt-get --assume-yes autoremove;
 apt-get --assume-yes clean;
 
+find / -name '*.bak' -type f -exec rm -vf {} \;
+find / -name '*.old' -type f -exec rm -vf {} \;
+find / -name '*.orig' -type f -exec rm -vf {} \;
+
 find /var/cache -type f -exec rm -rvf {} \;
 
 find /var/log -type f -exec truncate --size=0 {} \;
