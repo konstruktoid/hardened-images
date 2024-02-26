@@ -3,40 +3,42 @@
   hosts: localhost
   any_errors_fatal: true
   tasks:
-    - name: Install git
+    - name: Clone hardening repository
       become: true
-      ansible.builtin.package:
-        name: git
-        state: present
+      tags:
+        - always
+      block:
+        - name: Install git
+          ansible.builtin.package:
+            name: git
+            state: present
 
-    - name: Checkout konstruktoid.hardening
-      become: true
-      ansible.builtin.git:
-        repo: https://github.com/konstruktoid/ansible-role-hardening
-        dest: /etc/ansible/roles/konstruktoid.hardening
-        version: master
+        - name: Checkout konstruktoid.hardening
+          become: true
+          ansible.builtin.git:
+            repo: https://github.com/konstruktoid/ansible-role-hardening
+            dest: /etc/ansible/roles/konstruktoid.hardening
+            version: 'v2.0.0'
 
-    - name: Remove git
-      become: true
-      ansible.builtin.package:
-        name: git
-        state: absent
+        - name: Remove git
+          ansible.builtin.package:
+            name: git
+            state: absent
 
     - name: Include the hardening role
       ansible.builtin.include_role:
         name: konstruktoid.hardening
       vars:
         auditd_apply_audit_rules: false
-        block_blacklisted: false
-        install_aide: false
-        sshd_admin_net:
-          - "0.0.0.0/0"
+        manage_aide: false
+        manage_ufw: false
         sshd_allow_groups:
           - ubuntu
           - vagrant
         sshd_allow_users: []
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
-        sshd_use_dns: "no"
-        sshd_permit_root_login: "no"
+        sshd_use_dns: false
+        sshd_update_moduli: true
+        sshd_permit_root_login: false
         suid_sgid_permissions: false
