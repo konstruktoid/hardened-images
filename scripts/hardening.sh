@@ -1,5 +1,6 @@
 #!/bin/bash -eux
 
+export ANSIBLE_PRIVATE_ROLE_VARS=true
 export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
 export HISTFILESIZE=0
@@ -12,11 +13,7 @@ cd /tmp || exit 1
 
 ansible-playbook -i '127.0.0.1,' -c local ./local.yml
 
-ufw disable;
-
 systemctl restart sshd
-
-find /etc -name '*.bak' -exec rm -f {} \;
 
 if id vagrant; then
   chage --maxdays 365 vagrant
