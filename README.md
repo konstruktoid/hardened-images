@@ -4,9 +4,10 @@ This is a repository containing [Packer](https://www.packer.io/)
 templates to create a hardened [Ubuntu](https://releases.ubuntu.com) server.
 
 There are templates available for creating a
-- [Vagrant](https://www.vagrantup.com/) server base box
 - `.ova` package
 - [Amazon Machine Image (AMI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html)
+- [Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
+- [Vagrant](https://www.vagrantup.com/) server base box
 
 [20.04 LTS (Focal Fossa)](https://releases.ubuntu.com/focal/) and
 [22.04 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/) are supported.
@@ -23,26 +24,57 @@ on how to rewrite the template if you want to use it for another platforms.
 
 ## Usage
 
-### Using `packer`
-
-#### Amazon Web Services
+### Amazon Web Services
 
 Requires [Packer](https://www.packer.io/) and a
 [Amazon Web Services](https://aws.amazon.com/) account.
 
-Ensure that the correct `release` and `aws_region` are set in
-`ubuntu-aws-vars.json` before validating the configuration and building the
-Amazon Machine Image.
+Ensure that the correct values are set in `ubuntu-aws-vars.json` before
+validating the configuration and building the Amazon Machine Image.
+
+```json
+{
+  "aws_region": "eu-west-3",
+  "instance_type": "t3.medium",
+  "release": "22.04"
+}
+```
 
 ```sh
-export AWS_ACCESS_KEY_ID="<YOUR_AWS_ACCESS_KEY_ID>"
-export AWS_SECRET_ACCESS_KEY="<YOUR_AWS_SECRET_ACCESS_KEY>"
 packer init -upgrade -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 packer validate -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 packer build -timestamp-ui -var-file ubuntu-aws-vars.json ubuntu-hardened-aws.pkr.hcl
 ```
 
-#### Local files
+### Azure
+
+Requires [Packer](https://www.packer.io/) and a
+[Microsoft Azure](https://portal.azure.com/) account.
+
+Ensure the correct values are set in `ubuntu-azure-vars.json` before
+validating the configuration and building the image.
+
+[azure_vars_export](azure_vars_export) is a script that will create or reset
+the service principal, and export the necessary environment variables to
+authenticate with Azure.
+
+```json
+{
+  "image_offer": "0001-com-ubuntu-server-jammy",
+  "image_sku": "22_04-lts",
+  "principal_name": "PackerPrincipal",
+  "resource_group": "PackerGroup",
+  "vm_size": "Standard_D2s_v3"
+}
+```
+
+```sh
+packer init -upgrade -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
+packer validate -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
+packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
+```
+
+### Local files
 
 > **Note**
 >
@@ -98,38 +130,36 @@ end
 
 ```sh
 .
+├── azure_vars_export
 ├── build_box.sh
 ├── config
-│   ├── ansible.cfg
-│   └── local.yml
+│   ├── ansible.cfg
+│   └── local.yml
 ├── http
-│   ├── meta-data
-│   └── user-data
+│   ├── meta-data
+│   └── user-data
 ├── LICENSE
-├── output
-│   ├── ubuntu-20.04.6-hardened-server.box
-│   ├── ubuntu-20.04.6-hardened-server.ova
-│   ├── ubuntu-22.04.3-hardened-server.box
-│   ├── ubuntu-22.04.3-hardened-server.ova
-│   └── ubuntu-hardened-server.sha256
 ├── README.md
 ├── renovate.json
 ├── scripts
-│   ├── aws.sh
-│   ├── cleanup.sh
-│   ├── hardening.sh
-│   ├── minimize.sh
-│   ├── postproc.sh
-│   └── vagrant.sh
+│   ├── aws.sh
+│   ├── azure.sh
+│   ├── cleanup.sh
+│   ├── hardening.sh
+│   ├── minimize.sh
+│   ├── postproc.sh
+│   └── vagrant.sh
 ├── SECURITY.md
 ├── ubuntu-20.04-vars.json
 ├── ubuntu-22.04-vars.json
 ├── ubuntu-aws-vars.json
+├── ubuntu-azure-vars.json
 ├── ubuntu-hardened-aws.pkr.hcl
+├── ubuntu-hardened-azure.pkr.hcl
 ├── ubuntu-hardened-box.pkr.hcl
 └── Vagrantfile
 
-4 directories, 26 files
+3 directories, 25 files
 ```
 
 ## Contributing
