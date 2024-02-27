@@ -1,0 +1,31 @@
+# This file must be used with "source azure_vars_export" from bash,
+# you should not run it directly
+
+# This script will create or reset the service principal for the
+# Azure Resource Manager, and export the necessary environment
+# variables to authenticate with Azure.
+
+ARM_SUBSCRIPTION_ID="${ARM_SUBSCRIPTION_ID:-$(az account show --query id -o tsv)}"
+RESOURCE_GROUP_NAME="$(jq -r '."resource_group"' ubuntu-azure-vars.json)"
+PRINCIPAL_NAME="$(jq -r '."principal_name"' ubuntu-azure-vars.json)"
+CHECK_PRINCIPAL_NAME=$(az ad sp list --display-name "${PRINCIPAL_NAME}" | jq '.[]."appDisplayName"')
+
+if [ -z "${CHECK_PRINCIPAL_NAME}" ]; then
+  az_array=$(az ad sp create-for-rbac \
+    --role contributor \
+    --scopes "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}" \
+    --name "${PRINCIPAL_NAME}" 2>/dev/null)
+else
+  PRINCIPAL_ID=$(az ad sp list --display-name "${PRINCIPAL_NAME}" |\
+    jq -r '.[]."appId"' 2>/dev/null)
+  az_array=$(az ad sp credential reset --id "${PRINCIPAL_ID}" 2>/dev/null)
+fi
+
+ARM_CLIENT_ID="$(echo "${az_array}" | jq -r '.appId')"
+ARM_CLIENT_SECRET="$(echo "${az_array}" | jq -r '.password')"
+ARM_TENANT_ID="$(echo "${az_array}" | jq -r '.tenant')"
+
+export ARM_CLIENT_ID
+export ARM_CLIENT_SECRET
+export ARM_SUBSCRIPTION_ID
+export ARM_TENANT_ID
