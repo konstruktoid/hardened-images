@@ -1,16 +1,22 @@
 # This file must be used with "source azure_vars_export" from bash,
 # you should not run it directly
 
-# This script will create or reset the service principal for the
-# Azure Resource Manager, and export the necessary environment
-# variables to authenticate with Azure.
+# You can login with the following command:
+# az login --use-device-code --tenant <tenant_id>
 
 ARM_SUBSCRIPTION_ID="${ARM_SUBSCRIPTION_ID:-$(az account show --query id -o tsv)}"
-RESOURCE_GROUP_NAME="$(jq -r '."resource_group"' ubuntu-azure-vars.json)"
-PRINCIPAL_NAME="$(jq -r '."principal_name"' ubuntu-azure-vars.json)"
-CHECK_PRINCIPAL_NAME=$(az ad sp list --display-name "${PRINCIPAL_NAME}" | jq '.[]."appDisplayName"')
+LOCATION="${ARM_LOCATION:-northerneurope}"
+RESOURCE_GROUP_NAME="${ARM_RESOURCE_GROUP_NAME:-$(jq -r '."resource_group"' ubuntu-azure-vars.json)}"
+PRINCIPAL_NAME="${ARM_PRINCIPAL_NAME:-(jq -r '."principal_name"' ubuntu-azure-vars.json)}"
 
-if [ -z "${CHECK_PRINCIPAL_NAME}" ]; then
+CHECK_PRINCIPAL_NAME=$(az ad sp list --display-name "${PRINCIPAL_NAME}" | jq '.[]."appDisplayName"')
+CHECK_RESOURCE_GROUP=$(az group list --query "[?name=='${RESOURCE_GROUP_NAME}']" | jq '.[0].name')
+
+if [ "${CHECK_RESOURCE_GROUP}" == "null" ]; then
+  az group create --location "${LOCATION}" --name "${RESOURCE_GROUP_NAME}"
+fi
+
+if [ "${CHECK_PRINCIPAL_NAME}" != "\"${PRINCIPAL_NAME}\"" ]; then
   az_array=$(az ad sp create-for-rbac \
     --role contributor \
     --scopes "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}" \
