@@ -5,9 +5,9 @@
 # az login --use-device-code --tenant <tenant_id>
 
 ARM_SUBSCRIPTION_ID="${ARM_SUBSCRIPTION_ID:-$(az account show --query id -o tsv)}"
-LOCATION="${ARM_LOCATION:-northerneurope}"
+LOCATION="${ARM_LOCATION:-northeurope}"
 RESOURCE_GROUP_NAME="${ARM_RESOURCE_GROUP_NAME:-$(jq -r '."resource_group"' ubuntu-azure-vars.json)}"
-PRINCIPAL_NAME="${ARM_PRINCIPAL_NAME:-(jq -r '."principal_name"' ubuntu-azure-vars.json)}"
+PRINCIPAL_NAME="${ARM_PRINCIPAL_NAME:-$(jq -r '."principal_name"' ubuntu-azure-vars.json)}"
 
 CHECK_PRINCIPAL_NAME=$(az ad sp list --display-name "${PRINCIPAL_NAME}" | jq '.[]."appDisplayName"')
 CHECK_RESOURCE_GROUP=$(az group list --query "[?name=='${RESOURCE_GROUP_NAME}']" | jq '.[0].name')
