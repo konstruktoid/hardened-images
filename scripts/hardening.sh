@@ -5,6 +5,9 @@ export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
 export HISTFILESIZE=0
 
+apt-get --assume-yes update
+apt-get --assume-yes --no-install-recommends install software-properties-common
+
 add-apt-repository --yes ppa:ansible/ansible
 apt-get --assume-yes update
 apt-get --assume-yes --no-install-recommends install ansible
