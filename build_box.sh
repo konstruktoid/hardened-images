@@ -1,30 +1,33 @@
 #!/bin/bash
-set -e -o pipefail
+set -eux
 
-vagrant validate Vagrantfile || exit 1
-shellcheck -x -s bash -f gcc scripts/* || exit 1
+shellcheck -x -s bash -f gcc scripts/*
 
-vagrant destroy --force
+BASE_DIR="$(pwd)"
+GIT_CLONE_DIR="$(mktemp --directory -p /var/tmp bento.XXXXXX)"
 
-packer init -upgrade ubuntu-hardened-box.pkr.hcl
+mkdir -p "${BASE_DIR}/output"
+rm -rvf "${BASE_DIR}/output/*.box"
 
-grep -o 'box = ".*"' Vagrantfile | awk -F '"' '{print $2}' | while read -r BOX; do
-  vagrant box remove "${BOX}" --all || true
+git clone https://github.com/chef/bento.git "${GIT_CLONE_DIR}"
+
+cp -r "${BASE_DIR}/scripts/hardening.sh" "${GIT_CLONE_DIR}/packer_templates/scripts/"
+cp -r "${BASE_DIR}/config/" "${GIT_CLONE_DIR}/packer_templates/config"
+
+cd "${GIT_CLONE_DIR}"
+
+git apply ./packer_templates/config/bento.diff
+
+packer init -upgrade ./packer_templates
+
+find . -name 'ubuntu-2[2-8].04-x86_64.pkrvars.hcl' | while read -r template; do
+  packer build -only=virtualbox-iso.vm -var-file="${template}" ./packer_templates
+  box_name="$(basename "${template}" | awk -F '-' '{print $2}')"
+  find . -name "${box_name}-*.box" | while read -r box; do
+    mv "${box}" "${BASE_DIR}/output/"
+  done
 done
 
-rm -rvf ./output
-
-packer_validate()(
-  echo "Validating $2 using $1."
-  packer validate -var-file "$1" "$2" || exit 1
-)
-
-packer_build()(
-  echo "Building $2 using $1."
-  packer build -force -timestamp-ui -var-file "$1" "$2" || exit 1
-)
-
-find . -name 'ubuntu-2[0-9].*-vars.json' -type f | while read -r VARS; do
-  packer_validate "${VARS}" ubuntu-hardened-box.pkr.hcl
-  packer_build "${VARS}" ubuntu-hardened-box.pkr.hcl
-done
+cd "${BASE_DIR}"
+echo "${GIT_CLONE_DIR}"
+# rm -rf "${GIT_CLONE_DIR}"

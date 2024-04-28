@@ -6,7 +6,7 @@ export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
 export HISTFILESIZE=0
 
-echo 'GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"' | tee /etc/default/grub.d/99-azure.cfg
+echo "GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE_LINUX console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300\"" | tee /etc/default/grub.d/99-azure.cfg
 
 update-grub
 

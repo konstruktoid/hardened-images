@@ -76,22 +76,16 @@ packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azur
 
 ### Local files
 
-> **Note**
->
-> There are various issues when building a [Ubuntu release using subiquity](https://github.com/hashicorp/packer/issues/9115)
-
 Requires [Packer](https://www.packer.io/),
 [Vagrant](https://www.vagrantup.com/) and
 [VirtualBox](https://www.virtualbox.org).
 
-To build the Vagrant boxes and the `.ova` files , run `bash build_box.sh`.
+To build the Vagrant boxes, run `bash build_box.sh`.
+The script will `git clone https://github.com/chef/bento.git` to a temporary
+directory and apply a `.diff` to add the Ansible role.
 
-The script will validate the `Packer` template, the `Vagrantfile` and the shell
-scripts. It will then remove any old versions of the box before generating a new
-one.
-
-`packer build -force -timestamp-ui -var-file <var-file> ubuntu-hardened-box.pkr.hcl`
-is the `packer` command used if all files are valid.
+The generated boxes will be stored in the `output` directory and the
+temporary directory removed.
 
 ### Verification
 

@@ -1,0 +1,36 @@
+diff --git a/packer_templates/pkr-builder.pkr.hcl b/packer_templates/pkr-builder.pkr.hcl
+index 6c62ae3..2ece5e8 100644
+--- a/packer_templates/pkr-builder.pkr.hcl
++++ b/packer_templates/pkr-builder.pkr.hcl
+@@ -104,6 +104,7 @@ locals {
+                 "${path.root}/scripts/_common/vmware_debian_ubuntu.sh",
+                 "${path.root}/scripts/_common/parallels.sh",
+                 "${path.root}/scripts/${var.os_name}/hyperv_${var.os_name}.sh",
++                "${path.root}/scripts/hardening.sh",
+                 "${path.root}/scripts/${var.os_name}/cleanup_${var.os_name}.sh",
+                 "${path.root}/scripts/_common/parallels_post_cleanup_debian_ubuntu.sh",
+                 "${path.root}/scripts/_common/minimize.sh"
+@@ -163,6 +164,13 @@ locals {
+ build {
+   sources = var.sources_enabled
+
++  provisioner "file" {
++    sources     = [
++      "${path.root}/config/local.yml"
++      ]
++    destination = "/tmp/"
++  }
++
+   # Linux Shell scipts
+   provisioner "shell" {
+     environment_vars = var.os_name == "freebsd" ? [
+diff --git a/packer_templates/scripts/ubuntu/update_ubuntu.sh b/packer_templates/scripts/ubuntu/update_ubuntu.sh
+index 79ca01b..2e4ff5b 100644
+--- a/packer_templates/scripts/ubuntu/update_ubuntu.sh
++++ b/packer_templates/scripts/ubuntu/update_ubuntu.sh
+@@ -32,4 +32,4 @@ apt-get -y update;
+ echo "upgrade all installed packages incl. kernel and kernel headers"
+ apt-get -y dist-upgrade -o Dpkg::Options::="--force-confnew";
+
+-reboot
++# reboot
