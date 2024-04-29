@@ -92,9 +92,6 @@ temporary directory removed.
 There's a [SLSA](https://slsa.dev/) artifact present under the
 [slsa action workflow](https://github.com/konstruktoid/hardened-images/actions/workflows/slsa.yml).
 
-Verification of the built local files can be done using
-`sha256sum -c ubuntu-hardened-server.sha256` or using similar commands.
-
 ## Using the box in a Vagrantfile
 
 ```ruby
@@ -106,16 +103,10 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
   end
 
-  config.vm.define "focal" do |focal|
-    focal.vm.hostname = "hardened-focal"
-    focal.vm.box = "ubuntu-focal/20.04"
-    focal.vm.box_url = "file://output/ubuntu-20.04.4-hardened-server.box"
-  end
-
-  config.vm.define "jammy" do |jammy|
-    jammy.vm.hostname = "hardened-jammy"
-    jammy.vm.box = "ubuntu-jammy/22.04"
-    jammy.vm.box_url = "file://output/ubuntu-22.04-hardened-server.box"
+  config.vm.define "noble" do |noble|
+    noble.vm.hostname = "hardened-noble"
+    noble.vm.box = "ubuntu-noble/20.04"
+    noble.vm.box_url = "file://output/ubuntu-24.04-x86_64.bento-hardened.box"
   end
 end
 ```
@@ -128,10 +119,8 @@ end
 ├── build_box.sh
 ├── config
 │   ├── ansible.cfg
+│   ├── bento.diff
 │   └── local.yml
-├── http
-│   ├── meta-data
-│   └── user-data
 ├── LICENSE
 ├── README.md
 ├── renovate.json
@@ -144,16 +133,13 @@ end
 │   ├── postproc.sh
 │   └── vagrant.sh
 ├── SECURITY.md
-├── ubuntu-20.04-vars.json
-├── ubuntu-22.04-vars.json
 ├── ubuntu-aws-vars.json
 ├── ubuntu-azure-vars.json
 ├── ubuntu-hardened-aws.pkr.hcl
 ├── ubuntu-hardened-azure.pkr.hcl
-├── ubuntu-hardened-box.pkr.hcl
 └── Vagrantfile
 
-3 directories, 25 files
+2 directories, 21 files
 ```
 
 ## Contributing
