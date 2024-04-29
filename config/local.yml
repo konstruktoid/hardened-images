@@ -31,7 +31,6 @@
       vars:
         auditd_apply_audit_rules: false
         manage_aide: false
-        manage_ssh: false
         manage_ufw: false
         sshd_allow_groups:
           - sudo
@@ -39,7 +38,8 @@
         sshd_allow_users: []
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
-        sshd_use_dns: false
-        sshd_update_moduli: true
+        sshd_password_authentication: true
         sshd_permit_root_login: false
         suid_sgid_permissions: false
+        sshd_update_moduli: true
+        sshd_use_dns: false
