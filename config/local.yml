@@ -18,7 +18,7 @@
           ansible.builtin.git:
             repo: https://github.com/konstruktoid/ansible-role-hardening
             dest: /etc/ansible/roles/konstruktoid.hardening
-            version: 'v2.0.0'
+            version: v2.0.4
 
         - name: Remove git
           ansible.builtin.package:
@@ -38,7 +38,8 @@
         sshd_allow_users: []
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
-        sshd_use_dns: false
-        sshd_update_moduli: true
+        sshd_password_authentication: true
         sshd_permit_root_login: false
         suid_sgid_permissions: false
+        sshd_update_moduli: true
+        sshd_use_dns: false

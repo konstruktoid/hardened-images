@@ -6,15 +6,9 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
   end
 
-  config.vm.define "focal" do |focal|
-    focal.vm.hostname = "hardened-focal"
-    focal.vm.box = "ubuntu-focal/20.04"
-    focal.vm.box_url = "file://output/ubuntu-20.04.6-hardened-server.box"
-  end
-
-  config.vm.define "jammy" do |jammy|
-    jammy.vm.hostname = "hardened-jammy"
-    jammy.vm.box = "ubuntu-jammy/22.04"
-    jammy.vm.box_url = "file://output/ubuntu-22.04.3-hardened-server.box"
+  config.vm.define "noble" do |noble|
+    noble.vm.hostname = "hardened-noble"
+    noble.vm.box = "ubuntu-noble/20.04"
+    noble.vm.box_url = "file://output/ubuntu-24.04-x86_64.bento-hardened.box"
   end
 end
