@@ -9,7 +9,7 @@ There are templates available for creating a
 - [Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
 - [Vagrant](https://www.vagrantup.com/) server base box
 
-[22.04 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/)
+Ubuntu [22.04 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/) and
 [24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/) are supported.
 
 The Ansible role used to make the server a bit more secure is available in the
