@@ -13,10 +13,9 @@ rm -rvf /etc/ansible/*
 
 rm -rvf /etc/apt/sources.list.d/*
 
-dpkg --list | awk '{ print $2 }' | grep 'linux-headers' | xargs apt-get --assume-yes purge;
+dpkg --list | awk '{ print $2 }' | grep 'linux-headers' | grep -v "$(uname -r)" | xargs apt-get --assume-yes purge;
 dpkg --list | awk '{ print $2 }' | grep 'linux-image-.*-generic' | grep -v "$(uname -r)" | xargs apt-get --assume-yes purge;
 dpkg --list | awk '{ print $2 }' | grep 'linux-modules-.*-generic' | grep -v "$(uname -r)" | xargs apt-get --assume-yes purge;
-dpkg --list | awk '{ print $2 }' | grep -- '-dev\(:[a-z0-9]\+\)\?$' | xargs apt-get --assume-yes purge;
 dpkg --list | awk '{ print $2 }' | grep linux-source | xargs apt-get --assume-yes purge;
 dpkg --list | awk '{ print $2 }' | grep -- '-doc$' | xargs apt-get --assume-yes purge;
 

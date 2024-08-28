@@ -72,6 +72,7 @@ source "azure-arm" "hardened" {
   ssh_pty                           = "true"
   ssh_timeout                       = "10m"
   ssh_username                      = "ubuntu"
+  temporary_key_pair_type           = "ed25519"
   client_id                         = var.client_id
   client_secret                     = var.client_secret
   subscription_id                   = var.subscription_id

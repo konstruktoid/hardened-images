@@ -5,6 +5,7 @@ shellcheck -x -s bash -f gcc scripts/*
 
 BASE_DIR="$(pwd)"
 GIT_CLONE_DIR="$(mktemp --directory -p /var/tmp bento.XXXXXX)"
+BUILD_ISOS="virtualbox-iso.vm" # "virtualbox-iso.vm,vmware-iso.vm"
 
 mkdir -p "${BASE_DIR}/output"
 
@@ -20,9 +21,9 @@ git apply ./packer_templates/config/bento.diff
 packer init -upgrade ./packer_templates
 
 find . -name 'ubuntu-2[4-8].04-x86_64.pkrvars.hcl' | while read -r template; do
-  packer build -only=virtualbox-iso.vm,vmware-iso.vm -var-file="${template}" ./packer_templates
+  packer build -only="${BUILD_ISOS}" -var-file="${template}" ./packer_templates
   box_name="$(basename "${template}" | awk -F '-' '{print $2}')"
-  find . -name "ubuntu-${box_name}-*" | while read -r box; do
+  find . -name "ubuntu-${box_name}-*.box" | while read -r box; do
     mod_name="$(basename "$box" | sed 's/virtualbox/bento-hardened/g')"
     mv -v "${box}" "${BASE_DIR}/output/${mod_name}"
   done
