@@ -32,7 +32,7 @@ source "amazon-ebs" "hardened" {
   region        = var.aws_region
   source_ami_filter {
     filters = {
-      name                = "ubuntu/images/hvm-ssd/*ubuntu-*${var.release}-amd64-server*"
+      name                = "ubuntu/images/hvm-ssd-gp3/*ubuntu-*${var.release}-amd64-server*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -44,6 +44,7 @@ source "amazon-ebs" "hardened" {
   ssh_pty                   = "true"
   ssh_timeout               = "10m"
   ssh_username              = "ubuntu"
+  temporary_key_pair_type   = "ed25519"
 }
 
 build {

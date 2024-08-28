@@ -9,7 +9,7 @@ export HISTFILESIZE=0
 export PATH=$PATH:$HOME/.local/bin
 
 apt-get update
-apt-get --assume-yes --no-install-recommends install pipx
+apt-get --assume-yes --no-install-recommends install git pipx
 
 pipx install ansible-core
 pipx ensurepath
@@ -33,5 +33,7 @@ pipx uninstall-all
 
 unset PATH
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+apt-get --assume-yes purge git
 
 reboot

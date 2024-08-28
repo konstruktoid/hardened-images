@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "noble" do |noble|
     noble.vm.hostname = "hardened-noble"
-    noble.vm.box = "ubuntu-noble/20.04"
+    noble.vm.box = "ubuntu-noble/24.04"
     noble.vm.box_url = "file://output/ubuntu-24.04-x86_64.bento-hardened.box"
   end
 end

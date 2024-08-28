@@ -1,5 +1,5 @@
 {
   "aws_region": "eu-west-3",
   "instance_type": "t3.medium",
-  "release": "22.04"
+  "release": "24.04"
 }
