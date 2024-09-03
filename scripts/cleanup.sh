@@ -59,6 +59,14 @@ rm -rvf /tmp/* /var/tmp/*
 
 rm -vf /var/lib/systemd/random-seed
 
+if [ -f /loader/random-seed ]; then
+  rm -vf /loader/random-seed
+fi
+
+if [ -f /etc/machine-info ]; then
+  rm -vf /etc/machine-info
+fi
+
 rm -vf /root/.wget-hsts
 
 export HISTSIZE=0
