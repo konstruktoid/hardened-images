@@ -1,5 +1,5 @@
 diff --git a/packer_templates/pkr-builder.pkr.hcl b/packer_templates/pkr-builder.pkr.hcl
-index 6c62ae3..2ece5e8 100644
+index 519fb88..2c2e950 100644
 --- a/packer_templates/pkr-builder.pkr.hcl
 +++ b/packer_templates/pkr-builder.pkr.hcl
 @@ -104,6 +104,7 @@ locals {
@@ -10,10 +10,10 @@ index 6c62ae3..2ece5e8 100644
                  "${path.root}/scripts/${var.os_name}/cleanup_${var.os_name}.sh",
                  "${path.root}/scripts/_common/parallels_post_cleanup_debian_ubuntu.sh",
                  "${path.root}/scripts/_common/minimize.sh"
-@@ -163,6 +164,13 @@ locals {
+@@ -160,6 +161,13 @@ locals {
  build {
    sources = var.sources_enabled
-
+ 
 +  provisioner "file" {
 +    sources     = [
 +      "${path.root}/config/local.yml"
@@ -24,6 +24,34 @@ index 6c62ae3..2ece5e8 100644
    # Linux Shell scipts
    provisioner "shell" {
      environment_vars = var.os_name == "freebsd" ? [
+diff --git a/packer_templates/pkr-sources.pkr.hcl b/packer_templates/pkr-sources.pkr.hcl
+index 4c31488..8a5965c 100644
+--- a/packer_templates/pkr-sources.pkr.hcl
++++ b/packer_templates/pkr-sources.pkr.hcl
+@@ -247,6 +247,7 @@ source "qemu" "vm" {
+   ssh_port         = var.ssh_port
+   ssh_timeout      = var.ssh_timeout
+   ssh_username     = var.ssh_username
++  temporary_key_pair_type   = "ed25519"
+   winrm_password   = var.winrm_password
+   winrm_timeout    = var.winrm_timeout
+   winrm_username   = var.winrm_username
+@@ -284,6 +285,7 @@ source "virtualbox-iso" "vm" {
+   ssh_port         = var.ssh_port
+   ssh_timeout      = var.ssh_timeout
+   ssh_username     = var.ssh_username
++  temporary_key_pair_type   = "ed25519"
+   winrm_password   = var.winrm_password
+   winrm_timeout    = var.winrm_timeout
+   winrm_username   = var.winrm_username
+@@ -306,6 +308,7 @@ source "virtualbox-ovf" "vm" {
+   ssh_port         = var.ssh_port
+   ssh_timeout      = var.ssh_timeout
+   ssh_username     = var.ssh_username
++  temporary_key_pair_type   = "ed25519"
+   vm_name          = local.vm_name
+ }
+ source "vmware-iso" "vm" {
 diff --git a/packer_templates/scripts/ubuntu/update_ubuntu.sh b/packer_templates/scripts/ubuntu/update_ubuntu.sh
 index 79ca01b..2e4ff5b 100644
 --- a/packer_templates/scripts/ubuntu/update_ubuntu.sh
@@ -31,6 +59,6 @@ index 79ca01b..2e4ff5b 100644
 @@ -32,4 +32,4 @@ apt-get -y update;
  echo "upgrade all installed packages incl. kernel and kernel headers"
  apt-get -y dist-upgrade -o Dpkg::Options::="--force-confnew";
-
+ 
 -reboot
 +# reboot
