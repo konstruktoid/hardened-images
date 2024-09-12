@@ -5,7 +5,7 @@ shellcheck -x -s bash -f gcc scripts/*
 
 BASE_DIR="$(pwd)"
 GIT_CLONE_DIR="$(mktemp --directory -p /var/tmp bento.XXXXXX)"
-BUILD_ISOS="virtualbox-iso.vm" # "virtualbox-iso.vm,vmware-iso.vm"
+BUILD_ISOS="virtualbox-iso.vm" # "virtualbox-iso.vm,vmware-iso.vm,qemu.vm"
 
 mkdir -p "${BASE_DIR}/output"
 
