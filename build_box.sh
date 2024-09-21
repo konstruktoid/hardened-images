@@ -16,11 +16,11 @@ cp -r "${BASE_DIR}/config/" "${GIT_CLONE_DIR}/packer_templates/config"
 
 cd "${GIT_CLONE_DIR}"
 
+cp "${BASE_DIR}/config/ubuntu-24.10-x86_64.pkrvars.hcl" ./os_pkrvars/ubuntu/
 git apply ./packer_templates/config/bento.diff
 
 packer init -upgrade ./packer_templates
-
-find . -name 'ubuntu-2[4-8].04-x86_64.pkrvars.hcl' | while read -r template; do
+find . -name 'ubuntu-2[4-8].*-x86_64.pkrvars.hcl' | while read -r template; do
   packer build -only="${BUILD_ISOS}" -var-file="${template}" ./packer_templates
   box_name="$(basename "${template}" | awk -F '-' '{print $2}')"
   find . -name "ubuntu-${box_name}-*.box" | while read -r box; do
