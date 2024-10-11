@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -eux -o pipefail
 
 shellcheck -x -s bash -f gcc scripts/*
 
