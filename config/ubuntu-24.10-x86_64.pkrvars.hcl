@@ -1,7 +1,7 @@
 os_name                 = "ubuntu"
 os_version              = "24.10"
 os_arch                 = "x86_64"
-iso_url                 = "https://releases.ubuntu.com/oracular/ubuntu-24.10-beta-live-server-amd64.iso"
+iso_url                 = "https://releases.ubuntu.com/oracular/ubuntu-24.10-live-server-amd64.iso"
 iso_checksum            = "file:https://releases.ubuntu.com/oracular/SHA256SUMS"
 parallels_guest_os_type = "ubuntu"
 vbox_guest_os_type      = "Ubuntu_64"
