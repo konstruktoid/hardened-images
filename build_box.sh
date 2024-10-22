@@ -16,7 +16,6 @@ cp -r "${BASE_DIR}/config/" "${GIT_CLONE_DIR}/packer_templates/config"
 
 cd "${GIT_CLONE_DIR}"
 
-cp "${BASE_DIR}/config/ubuntu-24.10-x86_64.pkrvars.hcl" ./os_pkrvars/ubuntu/
 git apply ./packer_templates/config/bento.diff
 
 packer init -upgrade ./packer_templates
