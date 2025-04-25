@@ -4,6 +4,7 @@
 *.vdi
 .vagrant
 SHA256SUM
+Vagrantfile
 build
 output
 packer_cache

@@ -18,7 +18,7 @@
           ansible.builtin.git:
             repo: https://github.com/konstruktoid/ansible-role-hardening
             dest: /etc/ansible/roles/konstruktoid.hardening
-            version: v2.1.1
+            version: v3.2.0
 
         - name: Remove git
           ansible.builtin.package:
