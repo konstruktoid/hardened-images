@@ -1,23 +1,23 @@
 diff --git a/packer_templates/pkr-builder.pkr.hcl b/packer_templates/pkr-builder.pkr.hcl
-index 519fb88..2c2e950 100644
+index 41a6271..7fb6bea 100644
 --- a/packer_templates/pkr-builder.pkr.hcl
 +++ b/packer_templates/pkr-builder.pkr.hcl
-@@ -104,6 +104,7 @@ locals {
-                 "${path.root}/scripts/_common/vmware_debian_ubuntu.sh",
+@@ -103,6 +103,7 @@ locals {
+                 "${path.root}/scripts/_common/vmware.sh",
                  "${path.root}/scripts/_common/parallels.sh",
                  "${path.root}/scripts/${var.os_name}/hyperv_${var.os_name}.sh",
 +                "${path.root}/scripts/hardening.sh",
                  "${path.root}/scripts/${var.os_name}/cleanup_${var.os_name}.sh",
                  "${path.root}/scripts/_common/parallels_post_cleanup_debian_ubuntu.sh",
                  "${path.root}/scripts/_common/minimize.sh"
-@@ -160,6 +161,13 @@ locals {
+@@ -146,6 +147,13 @@ locals {
  build {
    sources = var.sources_enabled
  
 +  provisioner "file" {
-+    sources     = [
++    sources = [
 +      "${path.root}/config/local.yml"
-+      ]
++    ]
 +    destination = "/tmp/"
 +  }
 +
@@ -25,33 +25,109 @@ index 519fb88..2c2e950 100644
    provisioner "shell" {
      environment_vars = var.os_name == "freebsd" ? [
 diff --git a/packer_templates/pkr-sources.pkr.hcl b/packer_templates/pkr-sources.pkr.hcl
-index 4c31488..8a5965c 100644
+index 1969f48..1b83159 100644
 --- a/packer_templates/pkr-sources.pkr.hcl
 +++ b/packer_templates/pkr-sources.pkr.hcl
-@@ -247,6 +247,7 @@ source "qemu" "vm" {
-   ssh_port         = var.ssh_port
-   ssh_timeout      = var.ssh_timeout
-   ssh_username     = var.ssh_username
-+  temporary_key_pair_type   = "ed25519"
-   winrm_password   = var.winrm_password
-   winrm_timeout    = var.winrm_timeout
-   winrm_username   = var.winrm_username
-@@ -284,6 +285,7 @@ source "virtualbox-iso" "vm" {
-   ssh_port         = var.ssh_port
-   ssh_timeout      = var.ssh_timeout
-   ssh_username     = var.ssh_username
-+  temporary_key_pair_type   = "ed25519"
-   winrm_password   = var.winrm_password
-   winrm_timeout    = var.winrm_timeout
-   winrm_username   = var.winrm_username
-@@ -306,6 +308,7 @@ source "virtualbox-ovf" "vm" {
-   ssh_port         = var.ssh_port
-   ssh_timeout      = var.ssh_timeout
-   ssh_username     = var.ssh_username
-+  temporary_key_pair_type   = "ed25519"
-   vm_name          = local.vm_name
+@@ -202,32 +202,33 @@ source "hyperv-iso" "vm" {
+   guest_additions_mode  = var.hyperv_guest_additions_mode
+   switch_name           = var.hyperv_switch_name
+   # Source block common options
+-  boot_command     = var.boot_command
+-  boot_wait        = var.hyperv_boot_wait == null ? local.default_boot_wait : var.hyperv_boot_wait
+-  cd_content       = var.cd_content
+-  cd_files         = var.hyperv_generation == 2 ? local.cd_files : null
+-  cd_label         = var.cd_label
+-  cpus             = var.cpus
+-  communicator     = local.communicator
+-  disk_size        = local.disk_size
+-  floppy_files     = var.hyperv_generation == 2 ? null : local.floppy_files
+-  headless         = var.headless
+-  http_directory   = local.http_directory
+-  iso_checksum     = var.iso_checksum
+-  iso_target_path  = local.iso_target_path
+-  iso_url          = var.iso_url
+-  memory           = local.memory
+-  output_directory = "${local.output_directory}-hyperv"
+-  shutdown_command = local.shutdown_command
+-  shutdown_timeout = var.shutdown_timeout
+-  ssh_password     = var.ssh_password
+-  ssh_port         = var.ssh_port
+-  ssh_timeout      = var.ssh_timeout
+-  ssh_username     = var.ssh_username
+-  winrm_password   = var.winrm_password
+-  winrm_timeout    = var.winrm_timeout
+-  winrm_username   = var.winrm_username
+-  vm_name          = local.vm_name
++  boot_command            = var.boot_command
++  boot_wait               = var.hyperv_boot_wait == null ? local.default_boot_wait : var.hyperv_boot_wait
++  cd_content              = var.cd_content
++  cd_files                = var.hyperv_generation == 2 ? local.cd_files : null
++  cd_label                = var.cd_label
++  cpus                    = var.cpus
++  communicator            = local.communicator
++  disk_size               = local.disk_size
++  floppy_files            = var.hyperv_generation == 2 ? null : local.floppy_files
++  headless                = var.headless
++  http_directory          = local.http_directory
++  iso_checksum            = var.iso_checksum
++  iso_target_path         = local.iso_target_path
++  iso_url                 = var.iso_url
++  memory                  = local.memory
++  output_directory        = "${local.output_directory}-hyperv"
++  shutdown_command        = local.shutdown_command
++  shutdown_timeout        = var.shutdown_timeout
++  ssh_password            = var.ssh_password
++  ssh_port                = var.ssh_port
++  ssh_timeout             = var.ssh_timeout
++  ssh_username            = var.ssh_username
++  temporary_key_pair_type = "ed25519"
++  winrm_password          = var.winrm_password
++  winrm_timeout           = var.winrm_timeout
++  winrm_username          = var.winrm_username
++  vm_name                 = local.vm_name
  }
- source "vmware-iso" "vm" {
+ source "parallels-ipsw" "vm" {
+   # Parallels specific options
+@@ -239,22 +240,23 @@ source "parallels-ipsw" "vm" {
+   prlctl_post         = var.parallels_prlctl_post
+   prlctl_version_file = var.parallels_prlctl_version_file
+   # Source block common options
+-  boot_command     = var.boot_command
+-  boot_wait        = var.parallels_boot_wait == null ? local.default_boot_wait : var.parallels_boot_wait
+-  cpus             = var.cpus
+-  communicator     = local.communicator
+-  disk_size        = local.disk_size
+-  http_directory   = local.http_directory
+-  http_content     = var.http_content
+-  memory           = local.memory
+-  output_directory = "${local.output_directory}-parallels"
+-  shutdown_command = local.shutdown_command
+-  shutdown_timeout = var.shutdown_timeout
+-  ssh_password     = var.ssh_password
+-  ssh_port         = var.ssh_port
+-  ssh_timeout      = var.ssh_timeout
+-  ssh_username     = var.ssh_username
+-  vm_name          = local.vm_name
++  boot_command            = var.boot_command
++  boot_wait               = var.parallels_boot_wait == null ? local.default_boot_wait : var.parallels_boot_wait
++  cpus                    = var.cpus
++  communicator            = local.communicator
++  disk_size               = local.disk_size
++  http_directory          = local.http_directory
++  http_content            = var.http_content
++  memory                  = local.memory
++  output_directory        = "${local.output_directory}-parallels"
++  shutdown_command        = local.shutdown_command
++  shutdown_timeout        = var.shutdown_timeout
++  ssh_password            = var.ssh_password
++  ssh_port                = var.ssh_port
++  ssh_timeout             = var.ssh_timeout
++  ssh_username            = var.ssh_username
++  temporary_key_pair_type = "ed25519"
++  vm_name                 = local.vm_name
+ }
+ source "parallels-iso" "vm" {
+   # Parallels specific options
 diff --git a/packer_templates/scripts/ubuntu/update_ubuntu.sh b/packer_templates/scripts/ubuntu/update_ubuntu.sh
 index 79ca01b..2e4ff5b 100644
 --- a/packer_templates/scripts/ubuntu/update_ubuntu.sh
