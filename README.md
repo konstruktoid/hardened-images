@@ -7,10 +7,10 @@ There are templates available for creating a
 - `.ova` package
 - [Amazon Machine Image (AMI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html)
 - [Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
-- [Vagrant](https://www.vagrantup.com/) server base box
+- [Vagrant](https://www.vagrantup.com/) server base box, which includes an
+  VMDK file for use in VMWare products.
 
-Ubuntu [22.04 LTS (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/) and
-[24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/) are supported.
+Ubuntu [24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/) is supported.
 
 The Ansible role used to make the server a bit more secure is available in the
 [konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
