@@ -60,8 +60,8 @@ authenticate with Azure.
 
 ```json
 {
-  "image_offer": "0001-com-ubuntu-minimal-jammy",
-  "image_sku": "minimal-22_04-lts-gen2",
+  "image_offer": "ubuntu-24_04-lts",
+  "image_sku": "server",
   "principal_name": "PackerPrincipal",
   "resource_group": "PackerGroup",
   "vm_size": "Standard_D2s_v3"
