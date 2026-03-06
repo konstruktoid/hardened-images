@@ -1,8 +1,43 @@
+diff --git a/os_pkrvars/ubuntu/ubuntu-25.04-aarch64.pkrvars.hcl b/os_pkrvars/ubuntu/ubuntu-25.04-aarch64.pkrvars.hcl
+deleted file mode 100644
+index a387d8e..0000000
+--- a/os_pkrvars/ubuntu/ubuntu-25.04-aarch64.pkrvars.hcl
++++ /dev/null
+@@ -1,10 +0,0 @@
+-os_name                 = "ubuntu"
+-os_version              = "25.04"
+-os_arch                 = "aarch64"
+-iso_url                 = "https://cdimage.ubuntu.com/releases/plucky/release/ubuntu-25.04-live-server-arm64.iso"
+-iso_checksum            = "file:https://cdimage.ubuntu.com/releases/plucky/release/SHA256SUMS"
+-parallels_guest_os_type = "ubuntu"
+-vbox_guest_os_type      = "Ubuntu24_LTS_arm64"
+-vmware_guest_os_type    = "arm-ubuntu-64"
+-utm_vm_icon             = "ubuntu"
+-boot_command            = ["<wait>e<wait><down><down><down><end> autoinstall ds=nocloud-net\\;s=http://{{.HTTPIP}}:{{.HTTPPort}}/ubuntu/<wait><f10><wait>"]
+diff --git a/os_pkrvars/ubuntu/ubuntu-25.04-x86_64.pkrvars.hcl b/os_pkrvars/ubuntu/ubuntu-26.04-x86_64.pkrvars.hcl
+similarity index 59%
+rename from os_pkrvars/ubuntu/ubuntu-25.04-x86_64.pkrvars.hcl
+rename to os_pkrvars/ubuntu/ubuntu-26.04-x86_64.pkrvars.hcl
+index d73b16c..15e10dd 100644
+--- a/os_pkrvars/ubuntu/ubuntu-25.04-x86_64.pkrvars.hcl
++++ b/os_pkrvars/ubuntu/ubuntu-26.04-x86_64.pkrvars.hcl
+@@ -1,8 +1,8 @@
+ os_name                 = "ubuntu"
+-os_version              = "25.04"
++os_version              = "26.04"
+ os_arch                 = "x86_64"
+-iso_url                 = "https://releases.ubuntu.com/plucky/ubuntu-25.04-live-server-amd64.iso"
+-iso_checksum            = "file:https://releases.ubuntu.com/plucky/SHA256SUMS"
++iso_url                 = "https://cdimage.ubuntu.com/ubuntu-server/daily-live/current/resolute-live-server-amd64.iso"
++iso_checksum            = "file:https://cdimage.ubuntu.com/ubuntu-server/daily-live/current/SHA256SUMS"
+ parallels_guest_os_type = "ubuntu"
+ vbox_guest_os_type      = "Ubuntu_64"
+ vmware_guest_os_type    = "ubuntu-64"
 diff --git a/packer_templates/pkr-builder.pkr.hcl b/packer_templates/pkr-builder.pkr.hcl
-index 5f3b027..06c514a 100644
+index 61434a4..65d8dc9 100644
 --- a/packer_templates/pkr-builder.pkr.hcl
 +++ b/packer_templates/pkr-builder.pkr.hcl
-@@ -50,6 +50,7 @@ locals {
+@@ -51,6 +51,7 @@ locals {
                  "${path.root}/scripts/${var.os_name}/sudoers_${var.os_name}.sh",
                  "${path.root}/scripts/${var.os_name}/systemd_${var.os_name}.sh",
                  "${path.root}/scripts/${var.os_name}/hyperv_${var.os_name}.sh",
@@ -10,7 +45,7 @@ index 5f3b027..06c514a 100644
                  "${path.root}/scripts/${var.os_name}/cleanup_${var.os_name}.sh",
                  "${path.root}/scripts/_common/parallels_post_cleanup_debian_ubuntu.sh"
                  ] : (
-@@ -144,6 +145,12 @@ build {
+@@ -145,6 +146,12 @@ build {
      pause_after = "10s"
      except      = var.is_windows ? local.source_names : null
    }
