@@ -10,7 +10,8 @@ There are templates available for creating a
 - [Vagrant](https://www.vagrantup.com/) server base box, which includes an
   VMDK file for use in VMWare products.
 
-Ubuntu [24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/) is supported.
+Ubuntu [Ubuntu 26.04 LTS (Resolute Raccoon)](https://releases.ubuntu.com/resolute/)
+is supported.
 
 The Ansible role used to make the server a bit more secure is available in the
 [konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
