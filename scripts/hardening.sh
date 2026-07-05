@@ -8,8 +8,7 @@ export HISTSIZE=0
 export HISTFILESIZE=0
 export PATH=$PATH:$HOME/.local/bin
 
-apt-get update
-apt-get --assume-yes --no-install-recommends install git pipx
+apt-get --assume-yes --no-install-recommends --update install git pipx
 
 pipx install ansible-core
 pipx ensurepath
@@ -27,11 +26,12 @@ if id vagrant; then
   chage --mindays 1 vagrant
 fi
 
-rm -rvf /tmp/*.yml /tmp/*.cfg
+rm -rvf /tmp/*.yml /tmp/*.cfg /etc/ansible
 
 pipx uninstall-all
 
 unset PATH
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-apt-get --assume-yes purge git
+apt-get --assume-yes purge git pipx
+apt-get --assume-yes autoremove
