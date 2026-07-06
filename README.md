@@ -4,7 +4,6 @@ This is a repository containing [Packer](https://www.packer.io/)
 templates to create a hardened [Ubuntu](https://releases.ubuntu.com) server.
 
 There are templates available for creating a
-- `.ova` package
 - [Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
 - [QEMU](https://www.qemu.org/) `.qcow2` disk image
 
