@@ -1,43 +1,32 @@
 #!/bin/bash
 set -eux -o pipefail
 
-shellcheck -x -s bash -f gcc scripts/*
+shellcheck -x -s bash -f gcc scripts/* build_box.sh
 
 BASE_DIR="$(pwd)"
-GIT_CLONE_DIR="$(mktemp --directory -p /var/tmp bento.XXXXXX)"
+KEY_DIR="$(mktemp --directory -p /var/tmp packer-ssh.XXXXXX)"
+trap 'rm -rf "${KEY_DIR}"' EXIT
 
 mkdir -p "${BASE_DIR}/output"
 
-git clone https://github.com/chef/bento.git "${GIT_CLONE_DIR}"
+ssh-keygen -t ed25519 -N "" -C "packer-build" -f "${KEY_DIR}/id_ed25519" -q
 
-cp -r "${BASE_DIR}/scripts/hardening.sh" "${GIT_CLONE_DIR}/packer_templates/scripts/"
-cp -r "${BASE_DIR}/scripts/sbom.sh" "${GIT_CLONE_DIR}/packer_templates/scripts/"
-cp -r "${BASE_DIR}/config/" "${GIT_CLONE_DIR}/packer_templates/config"
+packer init -upgrade ./ubuntu-hardened-qemu.pkr.hcl
+packer build \
+  -var "ssh_public_key_file=${KEY_DIR}/id_ed25519.pub" \
+  -var "ssh_private_key_file=${KEY_DIR}/id_ed25519" \
+  -var 'qemu_efi_firmware_code=/usr/share/OVMF/OVMF_CODE_4M.fd' \
+  -var 'qemu_efi_firmware_vars=/usr/share/OVMF/OVMF_VARS_4M.fd' \
+  "$@" \
+  ./ubuntu-hardened-qemu.pkr.hcl
 
-cd "${GIT_CLONE_DIR}" || exit 1
-
-git apply ./packer_templates/config/bento.diff
-
-mkdir -p ./sbom
-
-packer init -upgrade ./packer_templates
-find . -name 'ubuntu-26.*-x86_64.pkrvars.hcl' | while read -r template; do
-  packer build -only="qemu.vm" -var-file="${template}" \
-    -var 'qemu_efi_firmware_code=/usr/share/OVMF/OVMF_CODE_4M.fd' \
-    -var 'qemu_efi_firmware_vars=/usr/share/OVMF/OVMF_VARS_4M.fd' \
-  ./packer_templates
-
-  find ./builds/build_complete -maxdepth 1 -type f -name '*.box' | while read -r box; do
-    tar -xf "${box}" -C "${BASE_DIR}/output" box_0.img
-    mv -v "${BASE_DIR}/output/box_0.img" "${BASE_DIR}/output/$(basename "${box}" .box).qcow2"
-
-    for ext in spdx cdx; do
-      if [ -f "./sbom/sbom.${ext}.json" ]; then
-        mv -v "./sbom/sbom.${ext}.json" "${BASE_DIR}/output/$(basename "${box}" .box).${ext}.json"
-      fi
+find "${BASE_DIR}/output" -mindepth 1 -maxdepth 1 -type d | while read -r build_dir; do
+  (
+    cd "${build_dir}"
+    echo "# $(date --utc +%FT%TZ) SHA256 checksums" > "CHECKSUMS"
+    for file in *.qcow2 *.json; do
+      [ -e "${file}" ] || continue
+      sha256sum "${file}" >> "CHECKSUMS"
     done
-  done
+  )
 done
-
-cd "${BASE_DIR}" || exit 1
-rm -rf "${GIT_CLONE_DIR}"

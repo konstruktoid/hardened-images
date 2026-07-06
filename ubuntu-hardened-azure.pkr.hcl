@@ -20,6 +20,12 @@ variable "image_sku" {
   type        = string
 }
 
+variable "my_ip_address" {
+  type        = string
+  default     = env("MY_IP_ADDRESS")
+  description = "Public IP address allowed to reach the build VM over SSH."
+}
+
 variable "resource_group" {
   type        = string
   description = "Resource group."
@@ -67,6 +73,7 @@ source "azure-arm" "hardened" {
   managed_image_name                = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
   os_type                           = "Linux"
   vm_size                           = var.vm_size
+  allowed_inbound_ip_addresses      = ["${var.my_ip_address}/32"]
   ssh_clear_authorized_keys         = "true"
   ssh_keep_alive_interval           = "15s"
   ssh_pty                           = "true"
@@ -90,15 +97,15 @@ build {
   }
 
   provisioner "shell" {
-    environment_vars  = ["ANSIBLE_CONFIG=/tmp/ansible.cfg", "HOME_DIR=/home/ubuntu", "TMPDIR=/var/tmp"]
-    execute_command   = "echo 'ubuntu' | {{ .Vars }} sudo -S -E sh -eux '{{ .Path }}'"
+    environment_vars  = ["ANSIBLE_CONFIG=/tmp/ansible.cfg"]
+    execute_command   = "echo 'ubuntu' | {{ .Vars }} sudo -S --preserve-env=ANSIBLE_CONFIG sh -eux '{{ .Path }}'"
     expect_disconnect = true
     pause_before      = "10s"
     remote_folder     = "/var/tmp"
     scripts = [
       "${path.root}/scripts/hardening.sh",
-      "${path.root}/scripts/cleanup.sh",
-      "${path.root}/scripts/azure.sh"
+      "${path.root}/scripts/azure.sh",
+      "${path.root}/scripts/cleanup.sh"
     ]
   }
 }

@@ -1,5 +1,5 @@
 {
-  "image_offer": "ubuntu-24_04-lts",
+  "image_offer": "ubuntu-26_04-lts",
   "image_sku": "server",
   "principal_name": "PackerPrincipal",
   "resource_group": "PackerGroup",

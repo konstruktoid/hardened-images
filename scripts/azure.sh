@@ -10,8 +10,7 @@ echo "GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE_LINUX console=tty1 console=tty
 
 update-grub
 
-apt-get --assume-yes update
-apt-get --assume-yes upgrade
+apt-get --assume-yes --update upgrade
 
 if [ ! -f /usr/bin/python ]; then
   ln -s "$(which python3)" /usr/bin/python
@@ -20,37 +19,3 @@ fi
 apt-get --assume-yes install walinuxagent
 
 sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
-
-systemd-tmpfiles --clean
-systemd-tmpfiles --remove
-
-apt-get --assume-yes update
-
-apt-get --assume-yes autoremove;
-apt-get --assume-yes clean;
-
-find /var/cache -type f -exec rm -rvf {} \;
-
-find /var/log -type f -exec truncate --size=0 {} \;
-
-truncate -s 0 /etc/machine-id
-
-rm -rvf /tmp/* /var/tmp/*
-
-rm -vf /var/lib/systemd/random-seed
-
-if [ -f /loader/random-seed ]; then
-  rm -vf /loader/random-seed
-fi
-
-if [ -f /etc/machine-info ]; then
-  rm -vf /etc/machine-info
-fi
-
-rm -vf /root/.wget-hsts
-
-rm -vf /etc/ssh/*_key /etc/ssh/*_key.pub
-
-rm -vf ~/.*history
-
-export HISTSIZE=0

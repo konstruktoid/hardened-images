@@ -20,18 +20,34 @@ if [ "${CHECK_PRINCIPAL_NAME}" != "\"${PRINCIPAL_NAME}\"" ]; then
   az_array=$(az ad sp create-for-rbac \
     --role contributor \
     --scopes "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}" \
-    --name "${PRINCIPAL_NAME}" 2>/dev/null)
+    --name "${PRINCIPAL_NAME}")
 else
   PRINCIPAL_ID=$(az ad sp list --display-name "${PRINCIPAL_NAME}" |\
-    jq -r '.[]."appId"' 2>/dev/null)
-  az_array=$(az ad sp credential reset --id "${PRINCIPAL_ID}" 2>/dev/null)
+    jq -r '.[]."appId"')
+  az_array=$(az ad sp credential reset --id "${PRINCIPAL_ID}")
 fi
 
 ARM_CLIENT_ID="$(echo "${az_array}" | jq -r '.appId')"
 ARM_CLIENT_SECRET="$(echo "${az_array}" | jq -r '.password')"
 ARM_TENANT_ID="$(echo "${az_array}" | jq -r '.tenant')"
 
+ROLE_SCOPE="/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}"
+CHECK_ROLE_ASSIGNMENT=$(az role assignment list \
+  --assignee "${ARM_CLIENT_ID}" \
+  --scope "${ROLE_SCOPE}" \
+  --query "[?roleDefinitionName=='Contributor']" -o tsv)
+
+if [ -z "${CHECK_ROLE_ASSIGNMENT}" ]; then
+  az role assignment create \
+    --assignee "${ARM_CLIENT_ID}" \
+    --role Contributor \
+    --scope "${ROLE_SCOPE}"
+fi
+
+MY_IP_ADDRESS="${MY_IP_ADDRESS:-$(curl -s --max-time 5 https://api.ipify.org)}"
+
 export ARM_CLIENT_ID
 export ARM_CLIENT_SECRET
 export ARM_SUBSCRIPTION_ID
 export ARM_TENANT_ID
+export MY_IP_ADDRESS
