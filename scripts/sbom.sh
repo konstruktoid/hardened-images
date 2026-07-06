@@ -8,7 +8,10 @@ curl -fsSL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
   sh -s -- -b "${SYFT_BIN_DIR}" "${SYFT_VERSION}"
 
 "${SYFT_BIN_DIR}/syft" scan dir:/ \
+  --exclude "**${SYFT_BIN_DIR}/syft" \
   -o spdx-json=/tmp/sbom.spdx.json \
   -o cyclonedx-json=/tmp/sbom.cdx.json
 
 chmod 0644 /tmp/sbom.spdx.json /tmp/sbom.cdx.json
+
+rm -f "${SYFT_BIN_DIR}/syft"

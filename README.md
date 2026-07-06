@@ -32,12 +32,13 @@ Ensure the correct values are set in `ubuntu-azure-vars.json` before
 validating the configuration and building the image.
 
 [azure_vars_export](azure_vars_export) is a script that will create or reset
-the service principal, and export the necessary environment variables to
-authenticate with Azure.
+the service principal, export the necessary environment variables to
+authenticate with Azure, and detect the caller's public IP address so the
+build VM's network security group only allows inbound SSH from that address.
 
 ```json
 {
-  "image_offer": "ubuntu-24_04-lts",
+  "image_offer": "ubuntu-26_04-lts",
   "image_sku": "server",
   "principal_name": "PackerPrincipal",
   "resource_group": "PackerGroup",
@@ -56,18 +57,33 @@ packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azur
 Requires [Packer](https://www.packer.io/), [QEMU](https://www.qemu.org/) and
 [OVMF](https://github.com/tianocore/tianocore.github.io/wiki/OVMF).
 
-To build the image, run `bash build_box.sh`.
-The script will `git clone https://github.com/chef/bento.git` to a temporary
-directory, apply a `.diff` to add the Ansible role, and build the
-`qemu.vm` template.
+To build the image, run `bash build_box.sh`. The script generates a throwaway
+SSH keypair, then builds [ubuntu-hardened-qemu.pkr.hcl](./ubuntu-hardened-qemu.pkr.hcl),
+a self-contained template with no external dependencies: Packer boots the
+official Ubuntu 26.04 live-server ISO in QEMU and installs it unattended
+using the [autoinstall](https://ubuntu.com/server/docs/install/autoinstall)
+configuration in [http/user-data.pkrtpl](./http/user-data.pkrtpl).
 
 Once the build completes, an SBOM of the image is generated with
 [Syft](https://github.com/anchore/syft) using
 [scripts/sbom.sh](./scripts/sbom.sh).
 
 The generated `.qcow2` disk image, along with its SPDX (`.spdx.json`) and
-CycloneDX (`.cdx.json`) SBOM files, will be stored in the `output` directory
-and the temporary directory removed.
+CycloneDX (`.cdx.json`) SBOM files and a `CHECKSUMS` file, are stored in a
+timestamped subdirectory under `output`.
+
+By default the image ships with a single `ubuntu` account (password
+`ubuntu`, see `var.password`/`var.password_hash`) and no persisted SSH keys.
+Pass your own public keys to keep them installed in the built image:
+
+```sh
+bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 AAAA... you@example.com"]'
+```
+
+Extra arguments given to `build_box.sh` are passed through to `packer build`.
+The ephemeral keypair Packer itself uses to provision the image is always
+stripped by [scripts/cleanup.sh](./scripts/cleanup.sh) before the build
+finishes.
 
 ### Verification
 
@@ -89,25 +105,22 @@ qemu-system-x86_64 \
   -m 2048 \
   -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
   -drive if=pflash,format=raw,file=/tmp/OVMF_VARS.fd \
-  -drive if=virtio,format=qcow2,file=./output/ubuntu-26.04-x86_64.libvirt.qcow2 \
+  -drive if=virtio,format=qcow2,file=./output/<build>/<build>.qcow2 \
   -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+  -display none -serial mon:stdio \
   -device virtio-net-pci,netdev=net0
 ```
 
-Replace `./output/ubuntu-26.04-x86_64.qcow2` with the actual image name
-produced in the `output` directory, and drop `-cpu host,accel=kvm` if
+Replace `./output/<build>/<build>.qcow2` with the actual `.qcow2` path
+produced under the `output` directory, and drop `-cpu host,accel=kvm` if
 hardware virtualization isn't available on the host.
 
-For a headless run, use `-display none -serial mon:stdio` instead of the
-default QEMU window.
-
-Once booted, connect over SSH as the `vagrant` user. The
-[Vagrant insecure keypair](https://github.com/hashicorp/vagrant/tree/main/keys)
-is installed as an authorized key, and password authentication with the
-password `vagrant` is also enabled:
+Once booted, connect over SSH as the `ubuntu` user, either with a key you
+passed via `ssh_authorized_keys` or with the password `ubuntu`
+(see [Local qcow2 image](#local-qcow2-image)):
 
 ```sh
-ssh -p 2222 -o StrictHostKeyChecking=no vagrant@localhost
+ssh -p 2222 -o StrictHostKeyChecking=no ubuntu@localhost
 ```
 
 ## Repository structure
@@ -118,23 +131,23 @@ ssh -p 2222 -o StrictHostKeyChecking=no vagrant@localhost
 ├── build_box.sh
 ├── config
 │   ├── ansible.cfg
-│   ├── bento.diff
 │   └── local.yml
+├── http
+│   ├── meta-data
+│   └── user-data.pkrtpl
 ├── LICENSE
 ├── README.md
 ├── scripts
 │   ├── azure.sh
 │   ├── cleanup.sh
 │   ├── hardening.sh
-│   ├── minimize.sh
-│   ├── postproc.sh
-│   ├── sbom.sh
-│   └── vagrant.sh
+│   └── sbom.sh
 ├── SECURITY.md
 ├── ubuntu-azure-vars.json
-└── ubuntu-hardened-azure.pkr.hcl
+├── ubuntu-hardened-azure.pkr.hcl
+└── ubuntu-hardened-qemu.pkr.hcl
 
-2 directories, 16 files
+3 directories, 16 files
 ```
 
 ## Contributing
