@@ -8,7 +8,7 @@ There are templates available for creating a
 - [Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
 - [QEMU](https://www.qemu.org/) `.qcow2` disk image
 
-Ubuntu [Ubuntu 26.04 LTS (Resolute Raccoon)](https://releases.ubuntu.com/resolute/)
+[Ubuntu 26.04 LTS (Resolute Raccoon)](https://releases.ubuntu.com/resolute/)
 is supported.
 
 The Ansible role used to make the server a bit more secure is available in the
