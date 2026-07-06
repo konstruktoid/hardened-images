@@ -11,8 +11,8 @@ and a local [QEMU](https://www.qemu.org/) `.qcow2` disk image (a former `.ova`
 target is documented in git history only). Ubuntu 26.04 LTS (Resolute
 Raccoon) is the supported release. Hardening is applied by the external
 [konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
-Ansible role, installed and configured via `config/local.yml` /
-`config/ansible.cfg`, not by Ansible code that lives in this repo.
+Ansible role. The role code is external; it is installed and configured by the Ansible playbook in `config/local.yml`
+(with settings from `config/ansible.cfg`).
 
 ## Commands
 
