@@ -1,7 +1,7 @@
 *~
 *.box
 *.cdx.json
-.claude
+.claude/settings.local.json
 crash.log
 .DS_Store
 id_ed25519*

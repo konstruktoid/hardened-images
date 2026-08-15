@@ -75,3 +75,20 @@ Ansible role. The role code is external; it is installed and configured by the A
   - `.github/instructions/packer-shell.instructions.md` applies to `*.pkr.hcl`
     and scripts (declarative templates, pinned plugin versions, secret/key
     hygiene, SBOM/provenance completeness).
+
+## Agent skills and instructions
+
+Skills live in `.agents/skills/`, with `.claude/skills/<name>` symlinked to
+each so Claude Code still discovers them. Both are vendored from
+[konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)
+and carry the upstream commit in a header comment — re-vendor rather than
+editing them locally.
+
+- `bash-secure-scripting` / `bash-testing` — extend the shellcheck/strict-mode
+  baseline in `instructions/bash_coding_instructions.md`, which is the source
+  of truth for it. Consult them before changing `build_box.sh`, `run_qemu.sh`,
+  `azure_vars_export`, or anything under `scripts/`. They complement
+  `.github/instructions/packer-shell.instructions.md`, which stays
+  authoritative for Packer template and SBOM/provenance concerns.
+- `github-actions-security` — applies to `.github/workflows/**`, alongside
+  `.github/instructions/github-actions.instructions.md`.
