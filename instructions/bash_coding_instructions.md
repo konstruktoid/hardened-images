@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 instructions/bash_coding_instructions.md
-Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
+Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
 Do not edit locally; re-vendor from upstream instead.
 -->
 
