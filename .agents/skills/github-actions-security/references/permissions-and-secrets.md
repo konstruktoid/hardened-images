@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/github/github-actions-security/references/permissions-and-secrets.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 
@@ -62,8 +62,12 @@ is short-lived and scoped to the repositories the app is installed on.
 
 ## Secrets
 
-Anyone with write access to a repository can read every secret configured on it, because they can
-write a workflow that prints one. Scope accordingly.
+Anyone with write access to a repository can read every repository secret, and every organization
+secret shared with it, because they can write a workflow that prints one. Environment secrets are
+the exception worth knowing: a job reaches them only by naming that `environment:`, and if the
+environment has required reviewers, a wait timer, or a branch restriction, the job does not start
+and the secret is never injected until those pass. That protection is the deployment gate, not the
+secret store, so it holds only while the rules stay on the environment. Scope accordingly.
 
 - **Prefer environment secrets to repository secrets, and repository to organization.** An
   environment secret is reachable only from a job that declares `environment:`, which can require

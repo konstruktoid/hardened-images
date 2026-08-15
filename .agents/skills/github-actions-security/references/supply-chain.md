@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/github/github-actions-security/references/supply-chain.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 
@@ -66,9 +66,11 @@ gh api repos/OWNER/REPO/commits/<tag> --jq .sha
 - Where a version must stay behind, for example because a newer major drops a runner or an input the
   workflow depends on, state the reason in a comment on the line, so it is not read later as neglect.
 
-`pinact --update` and `ratchet update` re-resolve every pinned reference to the current release, and
-are the practical way to apply this across a repository. Review the resulting diff; do not merge it
-unread.
+`pinact run -update` and `ratchet update` re-resolve every pinned reference to the current release,
+and are the practical way to apply this across a repository. Both rewrite the files in place, so run
+them on a clean tree and review the resulting diff; do not merge it unread. `pinact run -check`
+reports what is unpinned without editing anything, which is the form to use in CI or when a
+confirmed write is not wanted.
 
 ## Pinning does not stop at `uses:`
 

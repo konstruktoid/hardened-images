@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/strict-mode.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 
@@ -67,8 +67,16 @@ this as `SC2310`. When a function must fail on its first error, call it plainly 
 Three patterns cover nearly everything:
 
 ```bash
-# 1. Failure is expected and meaningless: state that in a comment.
-grep -q pattern file || true   # grep returns 1 when there is no match
+# 1. Failure is expected: accept the one status that means it, not every failure.
+#    `grep -q pattern file || true` also swallows status 2, which is a missing or
+#    unreadable file or an invalid pattern, and reports it as a clean no-match.
+status=0
+grep -q pattern file || status=$?
+case "${status}" in
+  0) found=1 ;;
+  1) found=0 ;;   # documented: no match
+  *) err "grep failed on file with status ${status}"; return 1 ;;
+esac
 
 # 2. Failure needs a branch.
 if ! systemctl is-active --quiet "${unit}"; then

@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/untrusted-input.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 
@@ -43,7 +43,7 @@ The safe forms pass data through the argument vector, so no second parser sees i
 ```bash
 "${command_array[@]}"                                    # a command built as an array
 bash -c 'process "$1"' _ "${file}"                       # $1 inside single quotes
-ssh host rm -rf -- "$(printf '%q' "${remote_dir}")"      # quoted for the remote shell
+ssh host rm -rf -- "$(printf '%q' "${remote_dir}")"      # only if the remote shell is bash
 awk -v expr="${expr}" 'BEGIN { print expr }'             # -v passes a value, not code
 find . -exec convert {} "${opts}" \;                     # no intermediate shell
 ```
@@ -51,6 +51,14 @@ find . -exec convert {} "${opts}" \;                     # no intermediate shell
 `printf '%q'` and `${var@Q}` (Bash 4.4 or later) produce a value that is safe to re-parse by
 another Bash. They do not make a value safe for `sh`, `awk`, SQL, or a URL, and they are not a
 substitute for avoiding the second parser.
+
+The `ssh` line above is the case where that matters most, because the parser is on the other
+machine and is not yours to choose. `ssh` joins its arguments into one string and hands it to the
+remote account's login shell, so `%q` output is only safe if that shell is Bash: under `dash`,
+`csh`, or a restricted shell the quoting can be wrong, and a `ForceCommand` or an
+`authorized_keys` `command=` ignores the argument entirely and runs something else. Confirm the
+remote shell, or use a transport that never builds a remote command line, such as `scp`, `rsync`,
+or piping the value in on standard input for the remote program to read.
 
 ## Arithmetic evaluation is code execution
 

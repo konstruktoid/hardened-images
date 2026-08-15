@@ -6,7 +6,7 @@ description: Authors, reviews, and hardens GitHub Actions workflows, reusable wo
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/github/github-actions-security/SKILL.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 
@@ -134,8 +134,10 @@ bump and its behavior implications in the pull request description.
 To pin or re-pin a whole repository, use a tool rather than editing by hand:
 [pinact](https://github.com/suzuki-shunsuke/pinact) or
 [ratchet](https://github.com/sethvargo/ratchet). Both rewrite `uses:` references to SHAs and keep
-the version comment. Do not add either tool to a repository's configuration without asking; run it
-and report the diff.
+the version comment. Both edit the files in place by default, so ask before running one and run it
+on a clean tree, then report the diff. When a confirmed write is not wanted, `pinact run -check` and
+`ratchet lint` report what is unpinned without changing anything. Do not add either tool to a
+repository's configuration without asking.
 
 ## Minimal permissions
 
@@ -191,6 +193,11 @@ If the change matches nothing in the table, the baseline and the verification ch
 Never declare a workflow change done from the edit alone. A workflow that parses is not a workflow
 that is safe, and a workflow that is safe is not a workflow that runs.
 
+The versions below are pinned rather than floating, for the reason this skill applies to everything
+else: a verifier resolved from `:latest` or a bare package name is a mutable dependency that decides
+whether a change passes. Bump them deliberately, and pin the container by digest instead of by tag
+when one of these runs in CI.
+
 Run, in this order:
 
 1. **`actionlint`**, over every workflow in the repository. It catches schema errors, invalid
@@ -198,7 +205,7 @@ Run, in this order:
    run the container:
 
    ```sh
-   docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color
+   docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
    ```
 
 2. **`zizmor`**, over workflows and action definitions. This is the security audit: template
@@ -206,7 +213,7 @@ Run, in this order:
    and dangerous triggers.
 
    ```sh
-   uvx zizmor --persona=pedantic .
+   uvx "zizmor@1.29.0" --persona=pedantic .
    ```
 
    Exit code 0 means no findings, and 11 through 14 mean findings by ascending severity. Codes 1

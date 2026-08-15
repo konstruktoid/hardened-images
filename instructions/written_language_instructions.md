@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 instructions/written_language_instructions.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 

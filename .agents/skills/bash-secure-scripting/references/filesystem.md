@@ -1,7 +1,7 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/filesystem.md
-Upstream commit: 4983695a16ac349dfcac90c4ab27c86d272c2d6e
+Upstream commit: f4696ac18174422ba873bac1630628d49123c7c0
 Do not edit locally; re-vendor from upstream instead.
 -->
 
@@ -126,10 +126,15 @@ matters.
 ## Downloaded artifacts
 
 ```bash
+# Under errexit any of these four exits the script, so the temporary needs an owner
+# that outlives them. Set the trap before creating anything it removes.
+tmp="$(mktemp -- "${dest}.XXXXXX")"
+trap 'rm -f -- "${tmp}" "${tmp}.asc"' EXIT
+
 curl --proto '=https' --tlsv1.2 -fsSL --max-time 60 -o "${tmp}" -- "${url}"
 printf '%s  %s\n' "${expected_sha256}" "${tmp}" | sha256sum -c -
 gpg --verify -- "${tmp}.asc" "${tmp}"      # where the project publishes signatures
-mv -- "${tmp}" "${dest}"
+mv -- "${tmp}" "${dest}"                   # after this the trap removes nothing
 ```
 
 - Never `curl … | bash`, `wget -O - … | sh`, or any variant. The shell executes whatever arrives,
