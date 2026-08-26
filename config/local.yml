@@ -2,6 +2,13 @@
 - name: Checkout and configure konstruktoid.hardening
   hosts: localhost
   any_errors_fatal: true
+  gather_facts: true
+
+  vars:
+    hardening_role_version: v4.4.1
+    hardening_role_repo: https://github.com/konstruktoid/ansible-role-hardening
+    hardening_role_path: /etc/ansible/roles/konstruktoid.hardening
+
   tasks:
     - name: Clone hardening repository
       become: true
@@ -14,11 +21,10 @@
             state: present
 
         - name: Checkout konstruktoid.hardening
-          become: true
           ansible.builtin.git:
-            repo: https://github.com/konstruktoid/ansible-role-hardening
-            dest: /etc/ansible/roles/konstruktoid.hardening
-            version: v4.4.1
+            repo: "{{ hardening_role_repo }}"
+            dest: "{{ hardening_role_path }}"
+            version: "{{ hardening_role_version }}"
 
         - name: Remove git
           ansible.builtin.package:
