@@ -1,39 +1,54 @@
 #!/bin/bash
 set -euo pipefail
 
-OUTPUT_DIR="$(pwd)/output"
-
-QCOW2_IMAGE="${1:-}"
-
-if [ -z "${QCOW2_IMAGE}" ]; then
-  QCOW2_IMAGE="$(find ${OUTPUT_DIR} -mindepth 2 -maxdepth 2 -name '*.qcow2'   -exec stat -c '%W %n' {} \; | sort -nr | head -1 | cut -d' ' -f2-)"
-fi
-
-if [ -z "${QCOW2_IMAGE}" ] || [ ! -f "${QCOW2_IMAGE}" ]; then
-  echo "No .qcow2 image found under ${OUTPUT_DIR}. Build one with 'bash build_box.sh' first, or pass a path as the first argument." >&2
-  exit 1
-fi
-
 OVMF_CODE="${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4M.fd}"
 OVMF_VARS_TEMPLATE="${OVMF_VARS_TEMPLATE:-/usr/share/OVMF/OVMF_VARS_4M.fd}"
 SSH_PORT="${SSH_PORT:-2222}"
 VM_MEMORY="${VM_MEMORY:-2048}"
 
-VARS_DIR="$(mktemp --directory -p /var/tmp run-qemu.XXXXXX)"
-trap 'rm -rf "${VARS_DIR}"' EXIT
+BASE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+OUTPUT_DIR="${BASE_DIR}/output"
+
+QCOW2_IMAGE="${1:-}"
+
+if [ -z "${QCOW2_IMAGE}" ]; then
+  QCOW2_IMAGE="$(
+    find "${OUTPUT_DIR}" -mindepth 2 -maxdepth 2 -name '*.qcow2' \
+      -exec stat -c '%Y %n' {} + 2> /dev/null | sort -nr | head -1 | cut -d' ' -f2-
+  )"
+fi
+
+if [ -z "${QCOW2_IMAGE}" ] || [ ! -f "${QCOW2_IMAGE}" ]; then
+  printf 'No .qcow2 image found under %s. Build one with "bash build_box.sh" first, or pass a path as the first argument.\n' \
+    "${OUTPUT_DIR}" >&2
+  exit 1
+fi
+
+for file in "${OVMF_CODE}" "${OVMF_VARS_TEMPLATE}"; do
+  [ -f "${file}" ] || {
+    printf 'UEFI firmware not found: %s. Install the ovmf package or set OVMF_CODE and OVMF_VARS_TEMPLATE.\n' \
+      "${file}" >&2
+    exit 1
+  }
+done
+
+VARS_DIR="$(mktemp --directory -t run-qemu.XXXXXX)"
+trap 'rm -rf -- "${VARS_DIR}"' EXIT
 
 VARS_FILE="${VARS_DIR}/OVMF_VARS.fd"
-cp "${OVMF_VARS_TEMPLATE}" "${VARS_FILE}"
+cp -- "${OVMF_VARS_TEMPLATE}" "${VARS_FILE}"
 
-ACCEL_ARGS=(-machine "q35,accel=kvm" -cpu host)
-if [ ! -e /dev/kvm ]; then
+if [ -e /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+  ACCEL_ARGS=(-machine "q35,accel=kvm" -cpu host)
+else
+  printf 'warning: /dev/kvm is not usable, falling back to software emulation.\n' >&2
   ACCEL_ARGS=(-machine q35 -cpu max)
 fi
 
-echo "Booting ${QCOW2_IMAGE}"
-echo "SSH once booted: ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no ubuntu@localhost"
+printf 'Booting %s\n' "${QCOW2_IMAGE}"
+printf 'SSH once booted: ssh -p %s ubuntu@localhost\n' "${SSH_PORT}"
 
-qemu-system-x86_64 \
+exec qemu-system-x86_64 \
   "${ACCEL_ARGS[@]}" \
   -m "${VM_MEMORY}" \
   -drive if=pflash,format=raw,readonly=on,file="${OVMF_CODE}" \
