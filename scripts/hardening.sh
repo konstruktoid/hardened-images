@@ -1,6 +1,9 @@
 #!/bin/bash
+set -euo pipefail
 
-set -eux
+HARDENING_ROLE_VERSION="${HARDENING_ROLE_VERSION:-v4.4.1}"
+
+BUILD_USERNAME="${BUILD_USERNAME:-ubuntu}"
 
 export ANSIBLE_PRIVATE_ROLE_VARS=true
 export DEBIAN_FRONTEND=noninteractive
@@ -13,17 +16,23 @@ apt-get --assume-yes --no-install-recommends --update install git pipx
 pipx install ansible-core
 pipx ensurepath
 
-curl -fsSL https://raw.githubusercontent.com/konstruktoid/ansible-role-hardening/master/requirements.yml | tee /tmp/requirements.yml
+curl -fsSL --retry 3 --max-time 60 \
+  -o /tmp/requirements.yml \
+  "https://raw.githubusercontent.com/konstruktoid/ansible-role-hardening/${HARDENING_ROLE_VERSION}/requirements.yml"
+
+cat /tmp/requirements.yml
 
 ansible-galaxy install -r /tmp/requirements.yml
 
-cd /tmp || exit 1
+cd /tmp
 
-ansible-playbook -i '127.0.0.1,' -c local ./local.yml
+ansible-playbook -i '127.0.0.1,' -c local \
+  -e "hardening_role_version=${HARDENING_ROLE_VERSION}" \
+  ./local.yml
 
-if id ubuntu > /dev/null 2>&1; then
-  chage --maxdays 365 ubuntu
-  chage --mindays 1 ubuntu
+if id "${BUILD_USERNAME}" > /dev/null 2>&1; then
+  chage --maxdays 365 "${BUILD_USERNAME}"
+  chage --mindays 1 "${BUILD_USERNAME}"
 fi
 
 rm -rvf /tmp/*.yml /tmp/*.cfg /etc/ansible
@@ -32,7 +41,6 @@ rm -rf "${HOME}/.ansible"
 pipx uninstall-all
 rm -rf "${HOME}/.local"
 
-unset PATH
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 apt-get --assume-yes purge git pipx open-vm-tools "linux-headers-$(uname -r)" linux-headers-generic
