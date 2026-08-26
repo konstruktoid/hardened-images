@@ -1,8 +1,9 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/secrets.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Credentials in shell scripts
@@ -10,6 +11,15 @@ Do not edit locally; re-vendor from upstream instead.
 Shell makes secrets visible in more places than most languages: the process table, the trace
 output, the shell history, the log the scheduler mails, and the transcript someone pastes into an
 issue.
+
+## Contents
+
+- Where a secret must never appear
+- Getting a secret into a command safely
+- Tracing and debugging
+- Generating secrets
+- Containing the damage
+- Output the repository keeps
 
 ## Where a secret must never appear
 
@@ -113,7 +123,7 @@ ownership, file type, and mode `0600` before opening it with the `require_secure
 [filesystem.md](filesystem.md).
 
 The file receives the same fully expanded commands, secrets included, so it needs a trusted path
-that only root can write to, mode `0600`, and a retention policy — it is now a credential store.
+that only root can write to, mode `0600`, and a retention policy: it is now a credential store.
 Keep tracing disabled around credential handling regardless of where the output goes. `PS4` is
 expanded on every traced command, so never build it from data.
 

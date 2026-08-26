@@ -1,14 +1,27 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/github/github-actions-security/references/supply-chain.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Action Supply Chain
 
 Read this when adding, upgrading, or pinning an action or reusable workflow, when configuring
 Dependabot or an allowed-actions policy, or when a workflow caches or publishes artifacts.
+
+## Contents
+
+- Pin to a commit SHA
+- Pin to the latest release
+- Pinning does not stop at `uses:`
+- Choosing an action at all
+- Dependabot
+- Policy enforcement
+- Cache and artifact poisoning
+- Provenance
+- Checklist
 
 ## Pin to a commit SHA
 
@@ -33,9 +46,13 @@ repositories consumed it on their next run without changing a line.
 Actions published by GitHub itself (`actions/*`, `github/*`) carry lower risk than third-party ones,
 but the reasoning is the same and the pinning rule is not worth making conditional.
 
-Immutable releases, in public preview since August 2025, prevent a published release's tag and
-assets from being changed. They narrow the window but do not close it: a branch can still be created
-with a tag's name and will satisfy a `@v1` reference. SHA pinning remains the guidance.
+Immutable releases prevent a published release's tag and assets from being changed, and generate a
+signed attestation for each asset. They are generally available and configurable per repository or
+per organization, applying to releases published after the setting is turned on. They narrow the
+window but do not close it: the protection covers the release's own tag, so the moving major or
+minor tags most workflows reference, `@v1` and `@v1.2`, stay mutable because they are separate tags
+that no release owns, and a repository that has not enabled the setting is unaffected. SHA pinning
+remains the guidance.
 
 ## Pin to the latest release
 
@@ -161,7 +178,7 @@ permissions:
   attestations: write
 
 steps:
-  - uses: actions/attest-build-provenance@<full-sha> # v3.x
+  - uses: actions/attest-build-provenance@<full-sha> # v4.x
     with:
       subject-path: dist/*.tar.gz
 ```
@@ -173,8 +190,8 @@ if consumers verify it, so document the verification command alongside the relea
 
 - [ ] Every `uses:` reference pinned to a full 40-character SHA with a version comment
 - [ ] The SHA was resolved from the source repository, not written from memory
-- [ ] Each version is the latest published release, looked up during this change, or the reason for
-      an older one is stated in a comment on the line
+- [ ] Each version is the newest release that clears the cooldown, looked up during this change, or
+      the reason for staying further behind is stated in a comment on the line
 - [ ] Release notes read for every version skipped by an upgrade, with major-version implications
       recorded in the pull request description
 - [ ] Composite actions, Docker base images, and install scripts inside a pinned action checked for
