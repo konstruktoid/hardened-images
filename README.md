@@ -16,24 +16,34 @@ repository.
 
 The role is installed and configured using [config/local.yml](./config/local.yml).
 
-See [https://www.packer.io/docs/builders](https://www.packer.io/docs/builders)
-and [https://www.packer.io/docs/post-processors](https://www.packer.io/docs/post-processors)
-on how to rewrite the template if you want to use it for another platforms.
+See the Packer
+[builders](https://developer.hashicorp.com/packer/docs/builders) and
+[post-processors](https://developer.hashicorp.com/packer/docs/post-processors)
+documentation on how to rewrite the templates for another platform.
 
 ## Usage
 
 ### Azure
 
-Requires [Packer](https://www.packer.io/) and a
-[Microsoft Azure](https://portal.azure.com/) account.
+Requires [Packer](https://www.packer.io/), the Azure CLI (`az`), `jq`,
+`curl` and a [Microsoft Azure](https://portal.azure.com/) account.
 
 Ensure the correct values are set in `ubuntu-azure-vars.json` before
 validating the configuration and building the image.
 
-[azure_vars_export](azure_vars_export) is a script that will create or reset
-the service principal, export the necessary environment variables to
-authenticate with Azure, and detect the caller's public IP address so the
-build VM's network security group only allows inbound SSH from that address.
+[azure_vars_export](azure_vars_export) creates or resets the service
+principal, exports the `ARM_*` variables needed to authenticate with Azure,
+and detects the caller's public IP address as `MY_IP_ADDRESS` so the build
+VM's network security group only allows inbound SSH from that address. It
+must be sourced rather than executed, and it expects an existing `az` login.
+The credentials are exported into the current shell only; never write them to
+disk.
+
+It also creates the resource group named in `ubuntu-azure-vars.json` if it
+does not already exist, and assigns the principal the `Contributor` role
+scoped to that group. `ARM_LOCATION` (default `northeurope`),
+`ARM_SUBSCRIPTION_ID`, `ARM_RESOURCE_GROUP_NAME`, `ARM_PRINCIPAL_NAME` and
+`MY_IP_ADDRESS` override the detected or file-derived values.
 
 ```json
 {
@@ -46,6 +56,9 @@ build VM's network security group only allows inbound SSH from that address.
 ```
 
 ```sh
+az login --use-device-code --tenant <tenant_id>
+source azure_vars_export
+
 packer init -upgrade -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
 packer validate -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
 packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
@@ -54,25 +67,44 @@ packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azur
 ### Local qcow2 image
 
 Requires [Packer](https://www.packer.io/), [QEMU](https://www.qemu.org/) and
-[OVMF](https://github.com/tianocore/tianocore.github.io/wiki/OVMF).
+OVMF, the [EDK II](https://github.com/tianocore/edk2) UEFI firmware, which is
+the `ovmf` package on Debian and Ubuntu.
+
+`build_box.sh` also checks that `shellcheck`, `ssh-keygen` and `sha256sum`
+are on `PATH`, and runs `shellcheck` over the repository's shell scripts
+before it builds anything.
 
 To build the image, run `bash build_box.sh`. The script generates a throwaway
-SSH keypair, then builds [ubuntu-hardened-qemu.pkr.hcl](./ubuntu-hardened-qemu.pkr.hcl),
-a self-contained template with no external dependencies: Packer boots the
-official Ubuntu 26.04 live-server ISO in QEMU and installs it unattended
-using the [autoinstall](https://ubuntu.com/server/docs/install/autoinstall)
-configuration in [http/user-data.pkrtpl](./http/user-data.pkrtpl).
+SSH keypair, then builds [ubuntu-hardened-qemu.pkr.hcl](./ubuntu-hardened-qemu.pkr.hcl):
+Packer boots the official Ubuntu 26.04 live-server ISO in QEMU and installs it
+unattended using the
+[autoinstall](https://canonical-subiquity.readthedocs-hosted.com/en/latest/intro-to-autoinstall.html)
+configuration in [http/user-data.pkrtpl.hcl](./http/user-data.pkrtpl.hcl). No
+base image or box is needed, but the build does fetch the Ubuntu ISO, the
+pinned `konstruktoid.hardening` tag and the pinned Syft release.
+
+A build takes roughly half an hour on a host with a usable `/dev/kvm`, and
+writes an image of about 8 GB, backed by a 20 GB virtual disk (`var.disk_size`).
 
 Once the build completes, an SBOM of the image is generated with
 [Syft](https://github.com/anchore/syft) using
 [scripts/sbom.sh](./scripts/sbom.sh).
 
-The generated `.qcow2` disk image, along with its SPDX (`.spdx.json`) and
-CycloneDX (`.cdx.json`) SBOM files and a `CHECKSUMS` file, are stored in a
-timestamped subdirectory under `output`.
+The generated `.qcow2` disk image, its SPDX (`.spdx.json`) and CycloneDX
+(`.cdx.json`) SBOM files, and a `CHECKSUMS` file covering those three are
+stored in a timestamped subdirectory under `output`. The build's serial
+console log (`serial.log`) and the guest's UEFI variable store
+(`efivars.fd`) are left there as well.
 
 By default the image ships with a single `ubuntu` account (password
 `ubuntu`, see `var.password`/`var.password_hash`) and no persisted SSH keys.
+
+> **Note**
+> That password is a published default and it survives into the built image,
+> which also has `sshd_password_authentication` enabled. It is meant for local
+> testing. For anything else, override `var.password` and `var.password_hash`
+> together, generating the hash with `openssl passwd -6`.
+
 Pass your own public keys to keep them installed in the built image:
 
 ```sh
@@ -86,67 +118,127 @@ finishes.
 
 ### Verification
 
-There's a [SLSA](https://slsa.dev/) artifact present under the
-[slsa action workflow](https://github.com/konstruktoid/hardened-images/actions/workflows/slsa.yml).
+Images are built locally rather than in CI, so a `.qcow2` file carries no
+provenance of its own; verify it against the `CHECKSUMS` file written beside
+it.
+
+What is attested is the build definition.
+[.github/workflows/slsa.yml](./.github/workflows/slsa.yml) runs on a push to
+`main` or `master`, on a `v*` tag, and on a published release. It checksums
+the templates, `build_box.sh`, `run_qemu.sh`, `azure_vars_export`, `scripts/`,
+`tools/`, `config/`, `http/` and `ubuntu-azure-vars.json` into a single
+`hardened-images.sha256` file, and that file is the subject of the
+[SLSA](https://slsa.dev/) build level 3 provenance generated by
+[slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator).
+
+Both appear on the
+[SLSA workflow runs](https://github.com/konstruktoid/hardened-images/actions/workflows/slsa.yml),
+where the `hardened-images.sha256` artifact is kept for five days. For a tag,
+the provenance is uploaded as a release asset by the generator, and the
+`hardened-images.sha256` file is attached to the same release by the
+workflow's `release` job.
 
 ## Using the qcow2 image
 
-Boot the image built by [build_box.sh](./build_box.sh) with QEMU, using the
-same OVMF UEFI firmware as the build, and forward a local port to the guest's
-SSH server:
+[run_qemu.sh](./run_qemu.sh) boots a built image with the same OVMF UEFI
+firmware the build used and forwards a local port to the guest's SSH server.
+With no argument it picks the most recently modified image under `output`:
 
 ```sh
-cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS.fd
-
-qemu-system-x86_64 \
-  -machine q35,accel=kvm \
-  -cpu host \
-  -m 2048 \
-  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
-  -drive if=pflash,format=raw,file=/tmp/OVMF_VARS.fd \
-  -drive if=virtio,format=qcow2,file=./output/<build>/<build>.qcow2 \
-  -netdev user,id=net0,hostfwd=tcp::2222-:22 \
-  -display none -serial mon:stdio \
-  -device virtio-net-pci,netdev=net0
+bash run_qemu.sh
+bash run_qemu.sh ./output/<build>/<build>.qcow2
 ```
 
-Replace `./output/<build>/<build>.qcow2` with the actual `.qcow2` path
-produced under the `output` directory, and drop `-cpu host,accel=kvm` if
-hardware virtualization isn't available on the host.
+`OVMF_CODE`, `OVMF_VARS_TEMPLATE`, `SSH_PORT` and `VM_MEMORY` can be set in the
+environment to override the defaults. The script falls back to software
+emulation, with a warning, when `/dev/kvm` is not usable.
 
 Once booted, connect over SSH as the `ubuntu` user, either with a key you
 passed via `ssh_authorized_keys` or with the password `ubuntu`
 (see [Local qcow2 image](#local-qcow2-image)):
 
 ```sh
-ssh -p 2222 -o StrictHostKeyChecking=no ubuntu@localhost
+ssh -p 2222 ubuntu@localhost
 ```
 
 ## Repository structure
 
 ```sh
 .
-├── azure_vars_export
-├── build_box.sh
+├── .agents
+│   └── skills            # Agent skills, vendored from agent-instructions-skills
+├── .claude
+│   └── skills            # Symlinks to .agents/skills, for Claude Code discovery
+├── .github
+│   ├── copilot-instructions.md  # Authoritative security and quality rules
+│   ├── instructions      # Path-scoped review rules
+│   └── workflows         # Lint, SLSA provenance, Scorecard, dependency review,
+│                         # issue assignment
+├── .pre-commit-config.yaml  # gitleaks, shellcheck, ansible-lint, packer fmt
+├── azure_vars_export     # Sourced: exports ARM_* credentials and MY_IP_ADDRESS
+├── build_box.sh          # Builds the local .qcow2 image
+├── CLAUDE.md             # Repository guidance for coding agents
 ├── config
 │   ├── ansible.cfg
-│   └── local.yml
+│   └── local.yml         # Installs and configures konstruktoid.hardening
 ├── http
 │   ├── meta-data
-│   └── user-data.pkrtpl
+│   └── user-data.pkrtpl.hcl  # autoinstall configuration
+├── instructions          # Coding, writing and governance standards, vendored
+│                         # from agent-instructions-skills
 ├── LICENSE
-├── README.md
+├── run_qemu.sh           # Boots a built image locally
 ├── scripts
-│   ├── azure.sh
-│   ├── cleanup.sh
-│   ├── hardening.sh
-│   └── sbom.sh
+│   ├── azure.sh          # Azure-specific image preparation
+│   ├── cleanup.sh        # Strips build leftovers; must always run last
+│   ├── hardening.sh      # Runs the Ansible provisioning step
+│   └── sbom.sh           # Generates SPDX and CycloneDX SBOMs with Syft
 ├── SECURITY.md
+├── tools
+│   └── vendor-agent-standards.sh  # Re-vendors instructions/ and .agents/skills
 ├── ubuntu-azure-vars.json
 ├── ubuntu-hardened-azure.pkr.hcl
 └── ubuntu-hardened-qemu.pkr.hcl
+```
 
-3 directories, 16 files
+## Development
+
+Both templates are formatted with `packer fmt` and must validate before they
+are built; `build_box.sh` runs `packer validate` itself. The same checks run in
+CI via [.github/workflows/lint.yml](./.github/workflows/lint.yml), which covers
+`packer fmt`/`validate`, `shellcheck`, `bash -n` syntax checks, `actionlint`,
+`zizmor` and `ansible-lint`.
+
+Locally, install the hooks with `pre-commit install`, or run the whole set with
+`pre-commit run --all-files`.
+
+The pinned versions that a build depends on are set in the templates:
+
+| Pinned thing | Where |
+|---|---|
+| Packer core and plugins | `packer` block in each `*.pkr.hcl` |
+| `konstruktoid.hardening` role tag | `var.hardening_role_version` |
+| Syft | `var.syft_version` |
+| Ubuntu ISO and its checksum | `var.iso_url` / `var.iso_checksum` (QEMU only) |
+| Agent skills and instructions | `UPSTREAM_REF` in `tools/vendor-agent-standards.sh` |
+
+The templates hand these to the provisioning scripts as environment
+variables: `HARDENING_ROLE_VERSION` from both templates, `SYFT_VERSION` from
+the QEMU one. Alongside them both templates pass `BUILD_USERNAME`, and the
+Azure template also passes `ANSIBLE_CONFIG`. `scripts/hardening.sh` and
+`config/local.yml` (role tag), `scripts/sbom.sh` (Syft) and
+`scripts/cleanup.sh` (username) each carry a matching fallback default so they
+still run standalone. Change the version in the template variable, then keep
+those defaults in sync with it.
+
+The contents of `instructions/` and `.agents/skills/` are vendored copies of
+[konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)
+and carry the upstream commit in a header comment. Do not edit them in place;
+bump `UPSTREAM_REF` and re-run (the script also takes a ref as its first
+argument, for a one-off run):
+
+```sh
+bash tools/vendor-agent-standards.sh
 ```
 
 ## Contributing

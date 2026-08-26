@@ -28,9 +28,16 @@ Ansible role. The role code is external; it is installed and configured by the A
 - `packer init -upgrade -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl`
   / `packer validate ...` / `packer build ...` — Azure image build. Requires
   Azure credentials; see `azure_vars_export` and `scripts/azure.sh`.
-- `shellcheck` — required to pass on all shell scripts (`.pre-commit-config.yaml`
-  also runs `gitleaks`, `end-of-file-fixer`, `trailing-whitespace`).
-- `packer validate` should be run before `packer build` for any `.pkr.hcl` change.
+- `shellcheck -x -s bash -f gcc build_box.sh run_qemu.sh azure_vars_export scripts/*.sh tools/*.sh`
+  — required to pass; `build_box.sh` runs exactly this list itself.
+- `packer fmt -check -diff .` and `packer validate` must both pass for any
+  `.pkr.hcl` change. `build_box.sh` runs `packer validate` before `packer build`.
+- `pre-commit run --all-files` — `gitleaks`, `shellcheck`, `ansible-lint`,
+  `packer fmt`, `detect-private-key`, and the pre-commit-hooks hygiene set.
+- `.github/workflows/lint.yml` runs the same checks in CI, plus `actionlint`
+  and `zizmor` over the workflows.
+- `bash tools/vendor-agent-standards.sh` — re-vendors `instructions/` and
+  `.agents/skills/` from the pinned upstream ref.
 
 ## Architecture
 
@@ -45,17 +52,28 @@ Ansible role. The role code is external; it is installed and configured by the A
   template used to unattended-install Ubuntu inside QEMU.
 - `scripts/hardening.sh` — invokes the Ansible provisioning step.
   `scripts/cleanup.sh` — strips the ephemeral Packer SSH keypair before the
-  build finishes; must always run. `scripts/sbom.sh` — generates SPDX/CycloneDX
-  SBOMs with Syft. `scripts/azure.sh` — Azure-specific provisioning helper.
+  build finishes; must always run, and must run last. `scripts/sbom.sh` —
+  generates SPDX/CycloneDX SBOMs with Syft, downloading and checksum-verifying
+  the pinned release rather than piping an installer into a shell.
+  `scripts/azure.sh` — Azure-specific provisioning helper.
+- The scripts take their pinned versions and the build username from
+  `environment_vars` set by the templates (`HARDENING_ROLE_VERSION`,
+  `SYFT_VERSION`, `BUILD_USERNAME`), each with a matching default so the script
+  still runs standalone. Change the version in the template variable, not in
+  the script.
+- `tools/vendor-agent-standards.sh` — repository tooling, not provisioning.
+  Nothing under `tools/` is uploaded into an image.
 - `build_box.sh` — orchestrates the full local QEMU build lifecycle
   (keypair generation, `packer build`, cleanup, SBOM, checksums).
 - `azure_vars_export` — creates/resets the Azure service principal, exports
   `ARM_*` credentials into the current shell, and detects the caller's public
   IP so the build VM's NSG only allows inbound SSH from that address. Never
   persist these credentials to disk.
-- `.github/workflows/slsa.yml` — builds artifact checksums and generates SLSA
-  provenance on push/release. `dependency-review.yml`, `scorecards.yml`,
-  `issues.yml` are supporting supply-chain/repo-hygiene workflows.
+- `.github/workflows/lint.yml` — `packer fmt`/`validate`, `shellcheck`,
+  `actionlint`, `zizmor` and `ansible-lint`. `slsa.yml` — builds artifact
+  checksums and generates SLSA provenance on push/release.
+  `dependency-review.yml`, `scorecards.yml`, `issues.yml` are supporting
+  supply-chain/repo-hygiene workflows.
 - `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`
   are the authoritative security/quality rules for this repo — follow them
   for any change here too:
@@ -79,10 +97,13 @@ Ansible role. The role code is external; it is installed and configured by the A
 ## Agent skills and instructions
 
 Skills live in `.agents/skills/`, with `.claude/skills/<name>` symlinked to
-each so Claude Code still discovers them. Both are vendored from
+each so Claude Code still discovers them. Both these and `instructions/` are
+vendored from
 [konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)
-and carry the upstream commit in a header comment — re-vendor rather than
-editing them locally.
+and carry the upstream ref and commit in a header comment. Never edit them
+locally: bump `UPSTREAM_REF` in `tools/vendor-agent-standards.sh` and re-run it.
+The script also rewrites upstream-only paths (`skills/<category>/<name>/` and
+`${CLAUDE_PLUGIN_ROOT}/instructions/`) to this repository's layout.
 
 - `bash-secure-scripting` / `bash-testing` — extend the shellcheck/strict-mode
   baseline in `instructions/bash_coding_instructions.md`, which is the source
@@ -92,3 +113,7 @@ editing them locally.
   authoritative for Packer template and SBOM/provenance concerns.
 - `github-actions-security` — applies to `.github/workflows/**`, alongside
   `.github/instructions/github-actions.instructions.md`.
+- `github-repository-security` — applies to repository-level configuration:
+  rulesets, scanning, `SECURITY.md`, `CODEOWNERS`, release and tag protection.
+- `ansible-verification-loop` — applies to `config/*.yml`, alongside
+  `.github/instructions/ansible.instructions.md`.
