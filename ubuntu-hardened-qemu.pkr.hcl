@@ -1,3 +1,14 @@
+packer {
+  required_version = ">= 1.14.0"
+
+  required_plugins {
+    qemu = {
+      version = "~> 1.1.6"
+      source  = "github.com/hashicorp/qemu"
+    }
+  }
+}
+
 variable "iso_url" {
   type        = string
   default     = "https://releases.ubuntu.com/26.04/ubuntu-26.04-live-server-amd64.iso"
@@ -52,6 +63,18 @@ variable "qemu_efi_firmware_vars" {
   description = "Writable UEFI variable store template used to boot the build VM."
 }
 
+variable "hardening_role_version" {
+  type        = string
+  default     = "v4.4.1"
+  description = "Tag of konstruktoid/ansible-role-hardening to provision with. Must match the version pinned in config/local.yml."
+}
+
+variable "syft_version" {
+  type        = string
+  default     = "v1.46.0"
+  description = "Tag of anchore/syft used to generate the SBOM."
+}
+
 variable "username" {
   type        = string
   default     = "ubuntu"
@@ -61,13 +84,14 @@ variable "username" {
 variable "password" {
   type        = string
   default     = "ubuntu"
-  description = "Plaintext login password for var.username, only used locally to authenticate sudo during provisioning."
+  description = "Plaintext login password for var.username, used to authenticate sudo during provisioning and at shutdown."
 }
 
 variable "password_hash" {
   type        = string
   default     = "$6$2GvGHZprsvH/AWjF$cYTR/lA/FudhHo/SF2iKs4yPQ3t5QdMWmbtg3ZeOlkgStgR/zYb7O7Q/79pfJKQ9DtEwaJ8V4i3pNXlrKlU310"
-  description = "SHA512 hash of var.password, generated with `openssl passwd -6 ubuntu`."
+  sensitive   = true
+  description = "SHA512 hash of var.password, generated with `openssl passwd -6`. Must correspond to var.password."
 }
 
 variable "ssh_public_key_file" {
@@ -90,22 +114,22 @@ locals {
   timestamp     = regex_replace(timestamp(), "[- TZ:]", "")
   image_name    = "ubuntu-26.04-x86_64-${local.timestamp}"
   output_dir    = "${path.root}/output"
+  build_dir     = "${path.root}/output/${local.image_name}"
   build_pub_key = trimspace(file(var.ssh_public_key_file))
-}
 
-packer {
-  required_plugins {
-    qemu = {
-      version = ">= 1.1.0"
-      source  = "github.com/hashicorp/qemu"
-    }
-  }
+  sudo_command = "echo '${var.password}' | {{ .Vars }} sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+
+  provisioner_env = [
+    "BUILD_USERNAME=${var.username}",
+    "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    "SYFT_VERSION=${var.syft_version}",
+  ]
 }
 
 source "qemu" "hardened" {
   iso_url          = var.iso_url
   iso_checksum     = var.iso_checksum
-  output_directory = "${local.output_dir}/${local.image_name}"
+  output_directory = local.build_dir
   vm_name          = "${local.image_name}.qcow2"
 
   disk_size      = var.disk_size
@@ -132,7 +156,7 @@ source "qemu" "hardened" {
     })
   }
 
-  qemuargs = [["-serial", "file:${local.output_dir}/${local.image_name}/serial.log"]]
+  qemuargs = [["-serial", "file:${local.build_dir}/serial.log"]]
 
   boot_wait = "5s"
   boot_command = [
@@ -151,7 +175,9 @@ source "qemu" "hardened" {
 }
 
 build {
+  name    = "hardened-qemu"
   sources = ["source.qemu.hardened"]
+
   provisioner "file" {
     sources     = ["config/ansible.cfg", "config/local.yml"]
     destination = "/tmp/"
@@ -163,7 +189,8 @@ build {
   }
 
   provisioner "shell" {
-    execute_command   = "echo '${var.password}' | sudo -S sh -eux '{{ .Path }}'"
+    environment_vars  = local.provisioner_env
+    execute_command   = local.sudo_command
     expect_disconnect = true
     pause_before      = "10s"
     remote_folder     = "/var/tmp"
@@ -176,19 +203,21 @@ build {
   provisioner "file" {
     direction   = "download"
     source      = "/tmp/sbom.spdx.json"
-    destination = "${local.output_dir}/${local.image_name}/${local.image_name}.spdx.json"
+    destination = "${local.build_dir}/${local.image_name}.spdx.json"
   }
 
   provisioner "file" {
     direction   = "download"
     source      = "/tmp/sbom.cdx.json"
-    destination = "${local.output_dir}/${local.image_name}/${local.image_name}.cdx.json"
+    destination = "${local.build_dir}/${local.image_name}.cdx.json"
   }
 
   provisioner "shell" {
-    execute_command   = "echo '${var.password}' | sudo -S sh -eux '{{ .Path }}'"
+    environment_vars  = local.provisioner_env
+    execute_command   = local.sudo_command
     expect_disconnect = true
     pause_before      = "10s"
+    remote_folder     = "/var/tmp"
     scripts           = ["${path.root}/scripts/cleanup.sh"]
   }
 }

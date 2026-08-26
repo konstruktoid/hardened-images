@@ -1,94 +1,127 @@
-variable "client_id" {
-  type        = string
-  default     = env("ARM_CLIENT_ID")
-  description = "The Azure Active Directory service principal client ID"
-}
-
-variable "client_secret" {
-  type        = string
-  default     = env("ARM_CLIENT_SECRET")
-  description = "The Azure Active Directory service principal client secret"
-}
-
-variable "image_offer" {
-  description = "The offer to use."
-  type        = string
-}
-
-variable "image_sku" {
-  description = "The SKU to use."
-  type        = string
-}
-
-variable "my_ip_address" {
-  type        = string
-  default     = env("MY_IP_ADDRESS")
-  description = "Public IP address allowed to reach the build VM over SSH."
-}
-
-variable "resource_group" {
-  type        = string
-  description = "Resource group."
-}
-
-variable "principal_name" {
-  type        = string
-  description = "Principal name."
-}
-
-variable "subscription_id" {
-  type        = string
-  default     = env("ARM_SUBSCRIPTION_ID")
-  description = "The ID of the Azure subscription"
-}
-
-variable "tenant_id" {
-  type        = string
-  default     = env("ARM_TENANT_ID")
-  description = "The ID of the Azure Active Directory tenant"
-}
-
-variable "vm_size" {
-  description = "The SKU to use."
-  type        = string
-}
-
-locals {
-  timestamp = regex_replace(timestamp(), "[- TZ:]", "")
-}
-
 packer {
+  required_version = ">= 1.14.0"
+
   required_plugins {
     azure = {
-      version = ">= 2.5.0"
+      version = "~> 2.5.0"
       source  = "github.com/hashicorp/azure"
     }
   }
 }
 
+variable "client_id" {
+  type        = string
+  default     = env("ARM_CLIENT_ID")
+  description = "The Azure Active Directory service principal client ID. Exported by `source azure_vars_export`."
+}
+
+variable "client_secret" {
+  type        = string
+  default     = env("ARM_CLIENT_SECRET")
+  sensitive   = true
+  description = "The Azure Active Directory service principal client secret. Exported by `source azure_vars_export`; never written to disk."
+}
+
+variable "subscription_id" {
+  type        = string
+  default     = env("ARM_SUBSCRIPTION_ID")
+  description = "The ID of the Azure subscription."
+}
+
+variable "tenant_id" {
+  type        = string
+  default     = env("ARM_TENANT_ID")
+  description = "The ID of the Azure Active Directory tenant."
+}
+
+variable "image_offer" {
+  type        = string
+  description = "The offer to use."
+}
+
+variable "image_sku" {
+  type        = string
+  description = "The SKU to use."
+}
+
+variable "vm_size" {
+  type        = string
+  description = "Size of the VM used to build the image."
+}
+
+variable "resource_group" {
+  type        = string
+  description = "Resource group the build VM and the resulting managed image live in."
+}
+
+variable "principal_name" {
+  type        = string
+  description = "Service principal display name. Consumed by azure_vars_export, not by this template."
+}
+
+variable "my_ip_address" {
+  type        = string
+  default     = env("MY_IP_ADDRESS")
+  description = "Public IP address allowed to reach the build VM over SSH. Detected by azure_vars_export."
+
+  validation {
+    condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.my_ip_address))
+    error_message = "The my_ip_address variable must be a single IPv4 address; run \"source azure_vars_export\" or set MY_IP_ADDRESS."
+  }
+}
+
+variable "username" {
+  type        = string
+  default     = "ubuntu"
+  description = "Login and SSH username on the build VM."
+}
+
+variable "password" {
+  type        = string
+  default     = "ubuntu"
+  description = "Password used to authenticate sudo on the build VM during provisioning."
+}
+
+variable "hardening_role_version" {
+  type        = string
+  default     = "v4.4.1"
+  description = "Tag of konstruktoid/ansible-role-hardening to provision with. Must match the version pinned in config/local.yml."
+}
+
+locals {
+  timestamp = regex_replace(timestamp(), "[- TZ:]", "")
+
+  sudo_command = "echo '${var.password}' | {{ .Vars }} sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION bash -eux -o pipefail '{{ .Path }}'"
+}
+
 source "azure-arm" "hardened" {
-  image_offer                       = var.image_offer
-  image_publisher                   = "canonical"
-  image_sku                         = var.image_sku
-  managed_image_name                = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
-  os_type                           = "Linux"
-  vm_size                           = var.vm_size
-  allowed_inbound_ip_addresses      = ["${var.my_ip_address}/32"]
-  ssh_clear_authorized_keys         = "true"
-  ssh_keep_alive_interval           = "15s"
-  ssh_pty                           = "true"
-  ssh_timeout                       = "10m"
-  ssh_username                      = "ubuntu"
-  temporary_key_pair_type           = "ed25519"
-  client_id                         = var.client_id
-  client_secret                     = var.client_secret
-  subscription_id                   = var.subscription_id
-  tenant_id                         = var.tenant_id
-  managed_image_resource_group_name = var.resource_group
+  client_id       = var.client_id
+  client_secret   = var.client_secret
+  subscription_id = var.subscription_id
+  tenant_id       = var.tenant_id
+
+  image_publisher = "canonical"
+  image_offer     = var.image_offer
+  image_sku       = var.image_sku
+  os_type         = "Linux"
+  vm_size         = var.vm_size
+
   build_resource_group_name         = var.resource_group
+  managed_image_resource_group_name = var.resource_group
+  managed_image_name                = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
+
+  allowed_inbound_ip_addresses = ["${var.my_ip_address}/32"]
+
+  ssh_username              = var.username
+  ssh_clear_authorized_keys = true
+  ssh_keep_alive_interval   = "15s"
+  ssh_pty                   = true
+  ssh_timeout               = "10m"
+  temporary_key_pair_type   = "ed25519"
 }
 
 build {
+  name    = "hardened-azure"
   sources = ["source.azure-arm.hardened"]
 
   provisioner "file" {
@@ -97,15 +130,19 @@ build {
   }
 
   provisioner "shell" {
-    environment_vars  = ["ANSIBLE_CONFIG=/tmp/ansible.cfg"]
-    execute_command   = "echo 'ubuntu' | {{ .Vars }} sudo -S --preserve-env=ANSIBLE_CONFIG sh -eux '{{ .Path }}'"
+    environment_vars = [
+      "ANSIBLE_CONFIG=/tmp/ansible.cfg",
+      "BUILD_USERNAME=${var.username}",
+      "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    ]
+    execute_command   = local.sudo_command
     expect_disconnect = true
     pause_before      = "10s"
     remote_folder     = "/var/tmp"
     scripts = [
       "${path.root}/scripts/hardening.sh",
       "${path.root}/scripts/azure.sh",
-      "${path.root}/scripts/cleanup.sh"
+      "${path.root}/scripts/cleanup.sh",
     ]
   }
 }

@@ -1,53 +1,99 @@
+# shellcheck shell=bash
+
 # This file must be used with "source azure_vars_export" from bash,
 # you should not run it directly
 
 # You can login with the following command:
 # az login --use-device-code --tenant <tenant_id>
 
-ARM_SUBSCRIPTION_ID="${ARM_SUBSCRIPTION_ID:-$(az account show --query id -o tsv)}"
-LOCATION="${ARM_LOCATION:-northeurope}"
-RESOURCE_GROUP_NAME="${ARM_RESOURCE_GROUP_NAME:-$(jq -r '."resource_group"' ubuntu-azure-vars.json)}"
-PRINCIPAL_NAME="${ARM_PRINCIPAL_NAME:-$(jq -r '."principal_name"' ubuntu-azure-vars.json)}"
+_azure_vars_export() {
+  local cmd vars_file location resource_group principal_name
+  local principal_id credential_json role_scope my_ip
 
-CHECK_PRINCIPAL_NAME=$(az ad sp list --display-name "${PRINCIPAL_NAME}" | jq '.[]."appDisplayName"')
-CHECK_RESOURCE_GROUP=$(az group list --query "[?name=='${RESOURCE_GROUP_NAME}']" | jq '.[0].name')
+  for cmd in az jq curl; do
+    if ! command -v "${cmd}" > /dev/null 2>&1; then
+      printf 'error: %s is required but was not found in PATH\n' "${cmd}" >&2
+      return 1
+    fi
+  done
 
-if [ "${CHECK_RESOURCE_GROUP}" == "null" ]; then
-  az group create --location "${LOCATION}" --name "${RESOURCE_GROUP_NAME}"
-fi
+  vars_file="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/ubuntu-azure-vars.json"
+  if [ ! -f "${vars_file}" ]; then
+    printf 'error: %s not found\n' "${vars_file}" >&2
+    return 1
+  fi
 
-if [ "${CHECK_PRINCIPAL_NAME}" != "\"${PRINCIPAL_NAME}\"" ]; then
-  az_array=$(az ad sp create-for-rbac \
-    --role contributor \
-    --scopes "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}" \
-    --name "${PRINCIPAL_NAME}")
-else
-  PRINCIPAL_ID=$(az ad sp list --display-name "${PRINCIPAL_NAME}" |\
-    jq -r '.[]."appId"')
-  az_array=$(az ad sp credential reset --id "${PRINCIPAL_ID}")
-fi
+  if ! ARM_SUBSCRIPTION_ID="${ARM_SUBSCRIPTION_ID:-$(az account show --query id -o tsv)}" \
+    || [ -z "${ARM_SUBSCRIPTION_ID}" ]; then
+    printf 'error: could not determine the subscription ID; run "az login" first\n' >&2
+    return 1
+  fi
 
-ARM_CLIENT_ID="$(echo "${az_array}" | jq -r '.appId')"
-ARM_CLIENT_SECRET="$(echo "${az_array}" | jq -r '.password')"
-ARM_TENANT_ID="$(echo "${az_array}" | jq -r '.tenant')"
+  location="${ARM_LOCATION:-northeurope}"
+  resource_group="${ARM_RESOURCE_GROUP_NAME:-$(jq -r '.resource_group' "${vars_file}")}"
+  principal_name="${ARM_PRINCIPAL_NAME:-$(jq -r '.principal_name' "${vars_file}")}"
 
-ROLE_SCOPE="/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}"
-CHECK_ROLE_ASSIGNMENT=$(az role assignment list \
-  --assignee "${ARM_CLIENT_ID}" \
-  --scope "${ROLE_SCOPE}" \
-  --query "[?roleDefinitionName=='Contributor']" -o tsv)
+  if [ -z "${resource_group}" ] || [ "${resource_group}" = "null" ] \
+    || [ -z "${principal_name}" ] || [ "${principal_name}" = "null" ]; then
+    printf 'error: resource_group and principal_name must be set in %s\n' "${vars_file}" >&2
+    return 1
+  fi
 
-if [ -z "${CHECK_ROLE_ASSIGNMENT}" ]; then
-  az role assignment create \
+  if [ -z "$(az group list --query "[?name=='${resource_group}'].name" -o tsv)" ]; then
+    az group create --location "${location}" --name "${resource_group}" || return 1
+  fi
+
+  role_scope="/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${resource_group}"
+
+  principal_id="$(az ad sp list --display-name "${principal_name}" \
+    --query "[?displayName=='${principal_name}'].appId | [0]" -o tsv)"
+
+  if [ -z "${principal_id}" ]; then
+    credential_json="$(az ad sp create-for-rbac \
+      --role contributor \
+      --scopes "${role_scope}" \
+      --name "${principal_name}")" || return 1
+  else
+    credential_json="$(az ad sp credential reset --id "${principal_id}")" || return 1
+  fi
+
+  ARM_CLIENT_ID="$(printf '%s' "${credential_json}" | jq -r '.appId')"
+  ARM_CLIENT_SECRET="$(printf '%s' "${credential_json}" | jq -r '.password')"
+  ARM_TENANT_ID="$(printf '%s' "${credential_json}" | jq -r '.tenant')"
+  unset credential_json
+
+  if [ -z "${ARM_CLIENT_ID}" ] || [ "${ARM_CLIENT_ID}" = "null" ] \
+    || [ -z "${ARM_CLIENT_SECRET}" ] || [ "${ARM_CLIENT_SECRET}" = "null" ]; then
+    printf 'error: the service principal credentials came back empty\n' >&2
+    return 1
+  fi
+
+  if [ -z "$(az role assignment list \
     --assignee "${ARM_CLIENT_ID}" \
-    --role Contributor \
-    --scope "${ROLE_SCOPE}"
-fi
+    --scope "${role_scope}" \
+    --query "[?roleDefinitionName=='Contributor'].id" -o tsv)" ]; then
+    az role assignment create \
+      --assignee "${ARM_CLIENT_ID}" \
+      --role Contributor \
+      --scope "${role_scope}" || return 1
+  fi
 
-MY_IP_ADDRESS="${MY_IP_ADDRESS:-$(curl -s --max-time 5 https://api.ipify.org)}"
+  my_ip="${MY_IP_ADDRESS:-$(curl -fsS --max-time 5 https://api.ipify.org)}"
+  if ! printf '%s' "${my_ip}" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+    printf 'error: could not determine a public IPv4 address; set MY_IP_ADDRESS explicitly\n' >&2
+    return 1
+  fi
+  MY_IP_ADDRESS="${my_ip}"
 
-export ARM_CLIENT_ID
-export ARM_CLIENT_SECRET
-export ARM_SUBSCRIPTION_ID
-export ARM_TENANT_ID
-export MY_IP_ADDRESS
+  export ARM_CLIENT_ID
+  export ARM_CLIENT_SECRET
+  export ARM_SUBSCRIPTION_ID
+  export ARM_TENANT_ID
+  export MY_IP_ADDRESS
+
+  printf 'Exported ARM_* credentials for %s and MY_IP_ADDRESS=%s\n' \
+    "${principal_name}" "${MY_IP_ADDRESS}"
+}
+
+_azure_vars_export
+unset -f _azure_vars_export
