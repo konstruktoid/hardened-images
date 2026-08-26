@@ -1,41 +1,59 @@
 ---
 name: SLSA
+
 on:
   push:
+    branches: [main, master]
+    tags: ['v*']
   release:
-    permissions:
-      contents: write
-    types: [published, released]
+    types: [published]
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
+    name: Checksum the build definition
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      REPOSITORY_NAME: ${{ github.event.repository.name }}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
-    runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
         with:
           egress-policy: audit
 
-      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
-        shell: bash
-
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build artifacts
         run: |
-          sha256sum *.hcl build_box.sh scripts/* ubuntu-*-vars.json > ${{ env.REPOSITORY_NAME }}.sha256
+          sha256sum \
+            ./*.pkr.hcl \
+            ./ubuntu-azure-vars.json \
+            ./build_box.sh \
+            ./run_qemu.sh \
+            ./azure_vars_export \
+            ./scripts/*.sh \
+            ./tools/*.sh \
+            ./config/* \
+            ./http/* \
+            > "${REPOSITORY_NAME}.sha256"
 
       - name: Generate hashes
-        shell: bash
         id: hash
         run: |
-          echo "hashes=$(sha256sum ${{ env.REPOSITORY_NAME }}.sha256 | base64 -w0)" >> "$GITHUB_OUTPUT"
+          echo "hashes=$(sha256sum "${REPOSITORY_NAME}.sha256" | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Upload ${{ env.REPOSITORY_NAME }}.sha256
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -57,16 +75,21 @@ jobs:
       upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
 
   release:
+    name: Attach the checksum file to the release
     needs: [build, provenance]
     permissions:
       actions: read
-      id-token: write
       contents: write
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: startsWith(github.ref, 'refs/tags/')
+    env:
+      REPOSITORY_NAME: ${{ github.event.repository.name }}
     steps:
-      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
-        shell: bash
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
 
       - name: Download ${{ env.REPOSITORY_NAME }}.sha256
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
