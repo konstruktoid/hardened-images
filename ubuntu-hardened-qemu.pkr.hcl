@@ -1,5 +1,5 @@
 packer {
-  required_version = ">= 1.14.0"
+  required_version = "~> 1.16.0"
 
   required_plugins {
     qemu = {
@@ -85,6 +85,11 @@ variable "password" {
   type        = string
   default     = "ubuntu"
   description = "Plaintext login password for var.username, used to authenticate sudo during provisioning and at shutdown."
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_@%+=:,./-]+$", var.password))
+    error_message = "The password variable must only contain [A-Za-z0-9_@%+=:,./-]; other characters break the single-quoted sudo command."
+  }
 }
 
 variable "password_hash" {

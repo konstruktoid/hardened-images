@@ -96,4 +96,12 @@ _azure_vars_export() {
 }
 
 _azure_vars_export
+_azure_vars_export_status="$?"
 unset -f _azure_vars_export
+
+if [ "${_azure_vars_export_status}" -ne 0 ]; then
+  unset -v _azure_vars_export_status
+  return 1
+fi
+
+unset -v _azure_vars_export_status

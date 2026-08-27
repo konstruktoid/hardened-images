@@ -1,5 +1,5 @@
 packer {
-  required_version = ">= 1.14.0"
+  required_version = "~> 1.16.0"
 
   required_plugins {
     azure = {
@@ -80,6 +80,11 @@ variable "password" {
   type        = string
   default     = "ubuntu"
   description = "Password used to authenticate sudo on the build VM during provisioning."
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_@%+=:,./-]+$", var.password))
+    error_message = "The password variable must only contain [A-Za-z0-9_@%+=:,./-]; other characters break the single-quoted sudo command."
+  }
 }
 
 variable "hardening_role_version" {
@@ -88,10 +93,25 @@ variable "hardening_role_version" {
   description = "Tag of konstruktoid/ansible-role-hardening to provision with. Must match the version pinned in config/local.yml."
 }
 
-locals {
-  timestamp = regex_replace(timestamp(), "[- TZ:]", "")
+variable "syft_version" {
+  type        = string
+  default     = "v1.46.0"
+  description = "Tag of anchore/syft used to generate the SBOM."
+}
 
-  sudo_command = "echo '${var.password}' | {{ .Vars }} sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION bash -eux -o pipefail '{{ .Path }}'"
+locals {
+  timestamp  = regex_replace(timestamp(), "[- TZ:]", "")
+  image_name = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
+  build_dir  = "${path.root}/output/${local.image_name}"
+
+  sudo_command = "echo '${var.password}' | {{ .Vars }} sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+
+  provisioner_env = [
+    "ANSIBLE_CONFIG=/tmp/ansible.cfg",
+    "BUILD_USERNAME=${var.username}",
+    "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    "SYFT_VERSION=${var.syft_version}",
+  ]
 }
 
 source "azure-arm" "hardened" {
@@ -108,7 +128,7 @@ source "azure-arm" "hardened" {
 
   build_resource_group_name         = var.resource_group
   managed_image_resource_group_name = var.resource_group
-  managed_image_name                = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
+  managed_image_name                = local.image_name
 
   allowed_inbound_ip_addresses = ["${var.my_ip_address}/32"]
 
@@ -130,11 +150,7 @@ build {
   }
 
   provisioner "shell" {
-    environment_vars = [
-      "ANSIBLE_CONFIG=/tmp/ansible.cfg",
-      "BUILD_USERNAME=${var.username}",
-      "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
-    ]
+    environment_vars  = local.provisioner_env
     execute_command   = local.sudo_command
     expect_disconnect = true
     pause_before      = "10s"
@@ -142,7 +158,32 @@ build {
     scripts = [
       "${path.root}/scripts/hardening.sh",
       "${path.root}/scripts/azure.sh",
-      "${path.root}/scripts/cleanup.sh",
+      "${path.root}/scripts/sbom.sh",
     ]
+  }
+
+  provisioner "shell-local" {
+    inline = ["mkdir -p '${local.build_dir}'"]
+  }
+
+  provisioner "file" {
+    direction   = "download"
+    source      = "/tmp/sbom.spdx.json"
+    destination = "${local.build_dir}/${local.image_name}.spdx.json"
+  }
+
+  provisioner "file" {
+    direction   = "download"
+    source      = "/tmp/sbom.cdx.json"
+    destination = "${local.build_dir}/${local.image_name}.cdx.json"
+  }
+
+  provisioner "shell" {
+    environment_vars  = local.provisioner_env
+    execute_command   = local.sudo_command
+    expect_disconnect = true
+    pause_before      = "10s"
+    remote_folder     = "/var/tmp"
+    scripts           = ["${path.root}/scripts/cleanup.sh"]
   }
 }

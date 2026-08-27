@@ -48,7 +48,7 @@ fi
 printf 'Booting %s\n' "${QCOW2_IMAGE}"
 printf 'SSH once booted: ssh -p %s ubuntu@localhost\n' "${SSH_PORT}"
 
-exec qemu-system-x86_64 \
+qemu-system-x86_64 \
   "${ACCEL_ARGS[@]}" \
   -m "${VM_MEMORY}" \
   -drive if=pflash,format=raw,readonly=on,file="${OVMF_CODE}" \

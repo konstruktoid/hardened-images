@@ -14,19 +14,19 @@ export HISTFILESIZE=0
 purge_matching() {
   local pattern="$1"
   local keep="${2:-}"
-  local packages
+  local packages=()
 
-  packages="$(dpkg-query --show --showformat='${Package}\n' \
-    | grep -E -- "${pattern}" || true)"
+  mapfile -t packages < <(
+    dpkg-query --show --showformat='${Package}\n' | grep -E -- "${pattern}" || true
+  )
 
-  if [ -n "${packages}" ] && [ -n "${keep}" ]; then
-    packages="$(printf '%s\n' "${packages}" | grep -F -v -- "${keep}" || true)"
+  if [ "${#packages[@]}" -gt 0 ] && [ -n "${keep}" ]; then
+    mapfile -t packages < <(printf '%s\n' "${packages[@]}" | grep -F -v -- "${keep}" || true)
   fi
 
-  [ -n "${packages}" ] || return 0
+  [ "${#packages[@]}" -gt 0 ] || return 0
 
-  # shellcheck disable=SC2086
-  apt-get --assume-yes purge ${packages}
+  apt-get --assume-yes purge "${packages[@]}"
 }
 
 if [ -s /tmp/authorized_keys ]; then

@@ -34,10 +34,13 @@ Ansible role. The role code is external; it is installed and configured by the A
   `.pkr.hcl` change. `build_box.sh` runs `packer validate` before `packer build`.
 - `pre-commit run --all-files` — `gitleaks`, `shellcheck`, `ansible-lint`,
   `packer fmt`, `detect-private-key`, and the pre-commit-hooks hygiene set.
-- `.github/workflows/lint.yml` runs the same checks in CI, plus `actionlint`
-  and `zizmor` over the workflows.
+- `.github/workflows/lint.yml` runs `shellcheck`, `bash -n`, `packer
+  fmt`/`validate` and `ansible-lint` in CI, plus `actionlint` and `zizmor` over
+  the workflows. `gitleaks`, `detect-private-key` and the hygiene hooks run in
+  `pre-commit` only.
 - `bash tools/vendor-agent-standards.sh` — re-vendors `instructions/` and
-  `.agents/skills/` from the pinned upstream ref.
+  `.agents/skills/` from the pinned upstream ref, verifying that the ref still
+  resolves to the pinned commit before it replaces anything.
 
 ## Architecture
 
@@ -54,8 +57,11 @@ Ansible role. The role code is external; it is installed and configured by the A
   `scripts/cleanup.sh` — strips the ephemeral Packer SSH keypair before the
   build finishes; must always run, and must run last. `scripts/sbom.sh` —
   generates SPDX/CycloneDX SBOMs with Syft, downloading and checksum-verifying
-  the pinned release rather than piping an installer into a shell.
-  `scripts/azure.sh` — Azure-specific provisioning helper.
+  the pinned release rather than piping an installer into a shell. Both
+  templates run it, and because `scripts/cleanup.sh` has to stay last, the SBOM
+  is a pre-cleanup snapshot: it still lists packages and files that cleanup
+  subsequently purges from the shipped image. `scripts/azure.sh` —
+  Azure-specific provisioning helper.
 - The scripts take their pinned versions and the build username from
   `environment_vars` set by the templates (`HARDENING_ROLE_VERSION`,
   `SYFT_VERSION`, `BUILD_USERNAME`), each with a matching default so the script
@@ -101,7 +107,8 @@ each so Claude Code still discovers them. Both these and `instructions/` are
 vendored from
 [konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)
 and carry the upstream ref and commit in a header comment. Never edit them
-locally: bump `UPSTREAM_REF` in `tools/vendor-agent-standards.sh` and re-run it.
+locally: bump `DEFAULT_UPSTREAM_REF` and `DEFAULT_UPSTREAM_COMMIT` in
+`tools/vendor-agent-standards.sh` and re-run it.
 The script also rewrites upstream-only paths (`skills/<category>/<name>/` and
 `${CLAUDE_PLUGIN_ROOT}/instructions/`) to this repository's layout.
 

@@ -16,13 +16,19 @@ apt-get --assume-yes --no-install-recommends --update install git pipx
 pipx install ansible-core
 pipx ensurepath
 
+WORK_DIR="$(mktemp --directory -t hardening.XXXXXX)"
+chmod 0700 "${WORK_DIR}"
+trap 'rm -rf -- "${WORK_DIR}"' EXIT
+
+REQUIREMENTS_FILE="${WORK_DIR}/requirements.yml"
+
 curl -fsSL --retry 3 --max-time 60 \
-  -o /tmp/requirements.yml \
+  -o "${REQUIREMENTS_FILE}" \
   "https://raw.githubusercontent.com/konstruktoid/ansible-role-hardening/${HARDENING_ROLE_VERSION}/requirements.yml"
 
-cat /tmp/requirements.yml
+cat "${REQUIREMENTS_FILE}"
 
-ansible-galaxy install -r /tmp/requirements.yml
+ansible-galaxy install -r "${REQUIREMENTS_FILE}"
 
 cd /tmp
 

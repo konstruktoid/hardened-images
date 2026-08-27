@@ -64,6 +64,10 @@ packer validate -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
 packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
 ```
 
+The Azure build generates the same SPDX (`.spdx.json`) and CycloneDX
+(`.cdx.json`) SBOMs as the local build and downloads them to a timestamped
+subdirectory under `output`, named after the managed image.
+
 ### Local qcow2 image
 
 Requires [Packer](https://www.packer.io/), [QEMU](https://www.qemu.org/) and
@@ -88,7 +92,10 @@ writes an image of about 8 GB, backed by a 20 GB virtual disk (`var.disk_size`).
 
 Once the build completes, an SBOM of the image is generated with
 [Syft](https://github.com/anchore/syft) using
-[scripts/sbom.sh](./scripts/sbom.sh).
+[scripts/sbom.sh](./scripts/sbom.sh). It runs before
+[scripts/cleanup.sh](./scripts/cleanup.sh), which has to stay last so the
+ephemeral provisioning keypair is always stripped, so the SBOM is a pre-cleanup
+snapshot and still lists packages and files that cleanup then purges.
 
 The generated `.qcow2` disk image, its SPDX (`.spdx.json`) and CycloneDX
 (`.cdx.json`) SBOM files, and a `CHECKSUMS` file covering those three are
@@ -220,22 +227,23 @@ The pinned versions that a build depends on are set in the templates:
 | `konstruktoid.hardening` role tag | `var.hardening_role_version` |
 | Syft | `var.syft_version` |
 | Ubuntu ISO and its checksum | `var.iso_url` / `var.iso_checksum` (QEMU only) |
-| Agent skills and instructions | `UPSTREAM_REF` in `tools/vendor-agent-standards.sh` |
+| Agent skills and instructions | `DEFAULT_UPSTREAM_REF` / `DEFAULT_UPSTREAM_COMMIT` in `tools/vendor-agent-standards.sh` |
 
 The templates hand these to the provisioning scripts as environment
-variables: `HARDENING_ROLE_VERSION` from both templates, `SYFT_VERSION` from
-the QEMU one. Alongside them both templates pass `BUILD_USERNAME`, and the
-Azure template also passes `ANSIBLE_CONFIG`. `scripts/hardening.sh` and
-`config/local.yml` (role tag), `scripts/sbom.sh` (Syft) and
+variables: both pass `HARDENING_ROLE_VERSION`, `SYFT_VERSION` and
+`BUILD_USERNAME`, and the Azure template also passes `ANSIBLE_CONFIG`.
+`scripts/hardening.sh` and `config/local.yml` (role tag), `scripts/sbom.sh` (Syft) and
 `scripts/cleanup.sh` (username) each carry a matching fallback default so they
 still run standalone. Change the version in the template variable, then keep
 those defaults in sync with it.
 
 The contents of `instructions/` and `.agents/skills/` are vendored copies of
 [konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)
-and carry the upstream commit in a header comment. Do not edit them in place;
-bump `UPSTREAM_REF` and re-run (the script also takes a ref as its first
-argument, for a one-off run):
+and carry the upstream commit in a header comment. The script verifies that the
+ref still resolves to the pinned commit before it replaces anything. Do not edit
+them in place; bump `DEFAULT_UPSTREAM_REF` and `DEFAULT_UPSTREAM_COMMIT` and
+re-run (the script also takes a ref as its first argument and the commit it must
+resolve to as its second, for a one-off run):
 
 ```sh
 bash tools/vendor-agent-standards.sh
