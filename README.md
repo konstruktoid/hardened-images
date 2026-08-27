@@ -59,7 +59,7 @@ scoped to that group. `ARM_LOCATION` (default `northeurope`),
 az login --use-device-code --tenant <tenant_id>
 source azure_vars_export
 
-packer init -upgrade -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
+packer init -upgrade ubuntu-hardened-azure.pkr.hcl
 packer validate -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
 packer build -timestamp-ui -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl
 ```
@@ -90,7 +90,7 @@ pinned `konstruktoid.hardening` tag and the pinned Syft release.
 A build takes roughly half an hour on a host with a usable `/dev/kvm`, and
 writes an image of about 8 GB, backed by a 20 GB virtual disk (`var.disk_size`).
 
-Once the build completes, an SBOM of the image is generated with
+Near the end of the build, an SBOM of the image is generated with
 [Syft](https://github.com/anchore/syft) using
 [scripts/sbom.sh](./scripts/sbom.sh). It runs before
 [scripts/cleanup.sh](./scripts/cleanup.sh), which has to stay last so the

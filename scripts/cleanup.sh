@@ -11,20 +11,32 @@ export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
 export HISTFILESIZE=0
 
+filter_lines() {
+  # grep exits 1 when nothing matches, which is the expected "no such packages"
+  # case here. Anything above that is a real failure and must not be swallowed.
+  local status=0
+
+  grep "$@" || status="$?"
+
+  [ "${status}" -le 1 ] || return "${status}"
+}
+
 purge_matching() {
   local pattern="$1"
   local keep="${2:-}"
+  local installed matched
   local packages=()
 
-  mapfile -t packages < <(
-    dpkg-query --show --showformat='${Package}\n' | grep -E -- "${pattern}" || true
-  )
+  installed="$(dpkg-query --show --showformat='${Package}\n')"
+  matched="$(printf '%s\n' "${installed}" | filter_lines -E -- "${pattern}")"
 
-  if [ "${#packages[@]}" -gt 0 ] && [ -n "${keep}" ]; then
-    mapfile -t packages < <(printf '%s\n' "${packages[@]}" | grep -F -v -- "${keep}" || true)
+  if [ -n "${matched}" ] && [ -n "${keep}" ]; then
+    matched="$(printf '%s\n' "${matched}" | filter_lines -F -v -- "${keep}")"
   fi
 
-  [ "${#packages[@]}" -gt 0 ] || return 0
+  [ -n "${matched}" ] || return 0
+
+  mapfile -t packages <<< "${matched}"
 
   apt-get --assume-yes purge "${packages[@]}"
 }

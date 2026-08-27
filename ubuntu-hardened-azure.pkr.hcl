@@ -42,6 +42,11 @@ variable "image_offer" {
 variable "image_sku" {
   type        = string
   description = "The SKU to use."
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._-]+$", var.image_sku))
+    error_message = "The image_sku variable must only contain [A-Za-z0-9._-]; it becomes part of the image name and of a shell-local command."
+  }
 }
 
 variable "vm_size" {

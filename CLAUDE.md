@@ -19,13 +19,14 @@ Ansible role. The role code is external; it is installed and configured by the A
 - `bash build_box.sh` — builds the local `.qcow2` image: generates a
   throwaway SSH keypair, boots the official Ubuntu 26.04 live-server ISO in
   QEMU, installs it unattended via the autoinstall config in
-  `http/user-data.pkrtpl.hcl`, provisions with `konstruktoid.hardening`, then
-  strips the ephemeral keypair (`scripts/cleanup.sh`) and generates an SBOM
-  (`scripts/sbom.sh`, Syft). Extra args are passed through to `packer build`,
-  e.g. `bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 ..."]'`.
+  `http/user-data.pkrtpl.hcl`, provisions with `konstruktoid.hardening`,
+  generates an SBOM (`scripts/sbom.sh`, Syft) and then strips the ephemeral
+  keypair (`scripts/cleanup.sh`, always last). Extra args are passed through
+  to `packer build`, e.g.
+  `bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 ..."]'`.
   Output (`.qcow2`, `.spdx.json`, `.cdx.json`, `CHECKSUMS`) lands under a
   timestamped subdirectory of `output/`.
-- `packer init -upgrade -var-file ubuntu-azure-vars.json ubuntu-hardened-azure.pkr.hcl`
+- `packer init -upgrade ubuntu-hardened-azure.pkr.hcl`
   / `packer validate ...` / `packer build ...` — Azure image build. Requires
   Azure credentials; see `azure_vars_export` and `scripts/azure.sh`.
 - `shellcheck -x -s bash -f gcc build_box.sh run_qemu.sh azure_vars_export scripts/*.sh tools/*.sh`
@@ -122,5 +123,8 @@ The script also rewrites upstream-only paths (`skills/<category>/<name>/` and
   `.github/instructions/github-actions.instructions.md`.
 - `github-repository-security` — applies to repository-level configuration:
   rulesets, scanning, `SECURITY.md`, `CODEOWNERS`, release and tag protection.
+- `github-organization-governance` — applies to settings that span repositories:
+  organization and enterprise policy, org-wide rulesets, member, team, app and
+  token access. Referenced by `instructions/github_governance_instructions.md`.
 - `ansible-verification-loop` — applies to `config/*.yml`, alongside
   `.github/instructions/ansible.instructions.md`.

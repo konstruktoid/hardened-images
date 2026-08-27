@@ -9,8 +9,15 @@ DEFAULT_UPSTREAM_COMMIT="994be479cf1d44d5ee69d0334da07e923d8dee2e"
 UPSTREAM_REF="${1:-${DEFAULT_UPSTREAM_REF}}"
 UPSTREAM_COMMIT_EXPECTED="${2:-}"
 
-if [ -z "${UPSTREAM_COMMIT_EXPECTED}" ] && [ "${UPSTREAM_REF}" = "${DEFAULT_UPSTREAM_REF}" ]; then
+if [ "${UPSTREAM_REF}" = "${DEFAULT_UPSTREAM_REF}" ] && [ -z "${UPSTREAM_COMMIT_EXPECTED}" ]; then
   UPSTREAM_COMMIT_EXPECTED="${DEFAULT_UPSTREAM_COMMIT}"
+fi
+
+if [ -z "${UPSTREAM_COMMIT_EXPECTED}" ]; then
+  printf 'error: %s is not the pinned ref (%s), so the expected commit must be given as the second argument\n' \
+    "${UPSTREAM_REF}" "${DEFAULT_UPSTREAM_REF}" >&2
+  printf 'usage: %s [ref] [expected-commit]\n' "${0##*/}" >&2
+  exit 1
 fi
 
 SKILLS=(
@@ -18,6 +25,7 @@ SKILLS=(
   "bash/bash-secure-scripting"
   "bash/bash-testing"
   "github/github-actions-security"
+  "github/github-organization-governance"
   "github/github-repository-security"
 )
 
