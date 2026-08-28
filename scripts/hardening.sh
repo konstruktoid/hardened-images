@@ -16,15 +16,12 @@ apt-get --assume-yes --no-install-recommends --update install git pipx
 pipx install ansible-core
 pipx ensurepath
 
-WORK_DIR="$(mktemp --directory -t hardening.XXXXXX)"
-chmod 0700 "${WORK_DIR}"
-trap 'rm -rf -- "${WORK_DIR}"' EXIT
+REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-/tmp/requirements.yml}"
 
-REQUIREMENTS_FILE="${WORK_DIR}/requirements.yml"
-
-curl -fsSL --retry 3 --max-time 60 \
-  -o "${REQUIREMENTS_FILE}" \
-  "https://raw.githubusercontent.com/konstruktoid/ansible-role-hardening/${HARDENING_ROLE_VERSION}/requirements.yml"
+if [ ! -f "${REQUIREMENTS_FILE}" ]; then
+  printf 'error: requirements file not found: %s\n' "${REQUIREMENTS_FILE}" >&2
+  exit 1
+fi
 
 cat "${REQUIREMENTS_FILE}"
 

@@ -97,6 +97,10 @@ Near the end of the build, an SBOM of the image is generated with
 ephemeral provisioning keypair is always stripped, so the SBOM is a pre-cleanup
 snapshot and still lists packages and files that cleanup then purges.
 
+Both templates also declare `scripts/cleanup.sh` as an
+`error-cleanup-provisioner`, so the keypair is stripped even when an earlier
+provisioner fails and the build is run with `-on-error=run-cleanup-provisioner`.
+
 The generated `.qcow2` disk image, its SPDX (`.spdx.json`) and CycloneDX
 (`.cdx.json`) SBOM files, and a `CHECKSUMS` file covering those three are
 stored in a timestamped subdirectory under `output`. The build's serial
@@ -187,7 +191,8 @@ ssh -p 2222 ubuntu@localhost
 ├── CLAUDE.md             # Repository guidance for coding agents
 ├── config
 │   ├── ansible.cfg
-│   └── local.yml         # Installs and configures konstruktoid.hardening
+│   ├── local.yml         # Installs and configures konstruktoid.hardening
+│   └── requirements.yml  # Collections konstruktoid.hardening needs
 ├── http
 │   ├── meta-data
 │   └── user-data.pkrtpl.hcl  # autoinstall configuration
@@ -225,17 +230,28 @@ The pinned versions that a build depends on are set in the templates:
 |---|---|
 | Packer core and plugins | `packer` block in each `*.pkr.hcl` |
 | `konstruktoid.hardening` role tag | `var.hardening_role_version` |
+| Collections the role needs | `config/requirements.yml` |
 | Syft | `var.syft_version` |
 | Ubuntu ISO and its checksum | `var.iso_url` / `var.iso_checksum` (QEMU only) |
 | Agent skills and instructions | `DEFAULT_UPSTREAM_REF` / `DEFAULT_UPSTREAM_COMMIT` in `tools/vendor-agent-standards.sh` |
 
 The templates hand these to the provisioning scripts as environment
 variables: both pass `HARDENING_ROLE_VERSION`, `SYFT_VERSION` and
-`BUILD_USERNAME`, and the Azure template also passes `ANSIBLE_CONFIG`.
+`BUILD_USERNAME`, and the Azure template also passes `ANSIBLE_CONFIG`. The
+password sudo authenticates with is passed the same way, as `SUDO_PASSWORD` in
+the provisioner environment file (`use_env_var_file`), so it never appears in
+the command Packer logs or in the guest's process list, and `--preserve-env`
+omits it so sudo drops it before the script runs.
 `scripts/hardening.sh` and `config/local.yml` (role tag), `scripts/sbom.sh` (Syft) and
 `scripts/cleanup.sh` (username) each carry a matching fallback default so they
 still run standalone. Change the version in the template variable, then keep
 those defaults in sync with it.
+
+`config/requirements.yml` is a copy of the `requirements.yml` shipped by
+`konstruktoid.hardening` at the pinned tag. The templates upload it and
+`scripts/hardening.sh` installs from it, so `ansible-galaxy` never installs
+collections fetched from a mutable tag at build time. Bumping the role version
+means checking that file against the upstream one for the new tag.
 
 The contents of `instructions/` and `.agents/skills/` are vendored copies of
 [konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)

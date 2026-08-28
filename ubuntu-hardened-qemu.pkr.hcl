@@ -84,11 +84,12 @@ variable "username" {
 variable "password" {
   type        = string
   default     = "ubuntu"
+  sensitive   = true
   description = "Plaintext login password for var.username, used to authenticate sudo during provisioning and at shutdown."
 
   validation {
     condition     = can(regex("^[A-Za-z0-9_@%+=:,./-]+$", var.password))
-    error_message = "The password variable must only contain [A-Za-z0-9_@%+=:,./-]; other characters break the single-quoted sudo command."
+    error_message = "The password variable must only contain [A-Za-z0-9_@%+=:,./-]; other characters break the single-quoted shell values it is passed through."
   }
 }
 
@@ -122,11 +123,12 @@ locals {
   build_dir     = "${path.root}/output/${local.image_name}"
   build_pub_key = trimspace(file(var.ssh_public_key_file))
 
-  sudo_command = "echo '${var.password}' | {{ .Vars }} sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+  sudo_command = ". {{ .Vars }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
 
   provisioner_env = [
     "BUILD_USERNAME=${var.username}",
     "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    "SUDO_PASSWORD=${var.password}",
     "SYFT_VERSION=${var.syft_version}",
   ]
 }
@@ -184,7 +186,7 @@ build {
   sources = ["source.qemu.hardened"]
 
   provisioner "file" {
-    sources     = ["config/ansible.cfg", "config/local.yml"]
+    sources     = ["config/ansible.cfg", "config/local.yml", "config/requirements.yml"]
     destination = "/tmp/"
   }
 
@@ -196,6 +198,7 @@ build {
   provisioner "shell" {
     environment_vars  = local.provisioner_env
     execute_command   = local.sudo_command
+    use_env_var_file  = true
     expect_disconnect = true
     pause_before      = "10s"
     remote_folder     = "/var/tmp"
@@ -220,8 +223,18 @@ build {
   provisioner "shell" {
     environment_vars  = local.provisioner_env
     execute_command   = local.sudo_command
+    use_env_var_file  = true
     expect_disconnect = true
     pause_before      = "10s"
+    remote_folder     = "/var/tmp"
+    scripts           = ["${path.root}/scripts/cleanup.sh"]
+  }
+
+  error-cleanup-provisioner "shell" {
+    environment_vars  = local.provisioner_env
+    execute_command   = local.sudo_command
+    use_env_var_file  = true
+    expect_disconnect = true
     remote_folder     = "/var/tmp"
     scripts           = ["${path.root}/scripts/cleanup.sh"]
   }

@@ -51,7 +51,11 @@ Ansible role. The role code is external; it is installed and configured by the A
 - `config/local.yml` — the playbook that clones a pinned version of
   `ansible-role-hardening` and includes it with this repo's variable
   overrides (SSH, sudo, ufw, auditd, etc.). `config/ansible.cfg` configures
-  the Ansible run.
+  the Ansible run. `config/requirements.yml` is a checked-in copy of the
+  collections `ansible-role-hardening` requires at the pinned tag; both
+  templates upload it and `scripts/hardening.sh` installs from it, so nothing
+  is fetched from a mutable ref at build time. Keep it in sync when bumping
+  the role version.
 - `http/user-data.pkrtpl.hcl` (+ `http/meta-data`) — cloud-init/autoinstall
   template used to unattended-install Ubuntu inside QEMU.
 - `scripts/hardening.sh` — invokes the Ansible provisioning step.
@@ -61,13 +65,19 @@ Ansible role. The role code is external; it is installed and configured by the A
   the pinned release rather than piping an installer into a shell. Both
   templates run it, and because `scripts/cleanup.sh` has to stay last, the SBOM
   is a pre-cleanup snapshot: it still lists packages and files that cleanup
-  subsequently purges from the shipped image. `scripts/azure.sh` —
-  Azure-specific provisioning helper.
+  subsequently purges from the shipped image. Both templates also declare
+  `scripts/cleanup.sh` as an `error-cleanup-provisioner`, so a failing
+  provisioner still strips the keypair when the build runs with
+  `-on-error=run-cleanup-provisioner`. `scripts/azure.sh` — Azure-specific
+  provisioning helper.
 - The scripts take their pinned versions and the build username from
   `environment_vars` set by the templates (`HARDENING_ROLE_VERSION`,
   `SYFT_VERSION`, `BUILD_USERNAME`), each with a matching default so the script
   still runs standalone. Change the version in the template variable, not in
-  the script.
+  the script. The sudo password travels the same way, as `SUDO_PASSWORD` in
+  the provisioner environment file (`use_env_var_file = true`); never
+  interpolate `var.password` into `execute_command`, and keep it out of
+  `--preserve-env` so sudo drops it before the script runs.
 - `tools/vendor-agent-standards.sh` — repository tooling, not provisioning.
   Nothing under `tools/` is uploaded into an image.
 - `build_box.sh` — orchestrates the full local QEMU build lifecycle

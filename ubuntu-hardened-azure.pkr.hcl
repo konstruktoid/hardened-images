@@ -84,11 +84,12 @@ variable "username" {
 variable "password" {
   type        = string
   default     = "ubuntu"
+  sensitive   = true
   description = "Password used to authenticate sudo on the build VM during provisioning."
 
   validation {
     condition     = can(regex("^[A-Za-z0-9_@%+=:,./-]+$", var.password))
-    error_message = "The password variable must only contain [A-Za-z0-9_@%+=:,./-]; other characters break the single-quoted sudo command."
+    error_message = "The password variable must only contain [A-Za-z0-9_@%+=:,./-]; other characters break the single-quoted shell values it is passed through."
   }
 }
 
@@ -109,12 +110,13 @@ locals {
   image_name = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
   build_dir  = "${path.root}/output/${local.image_name}"
 
-  sudo_command = "echo '${var.password}' | {{ .Vars }} sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+  sudo_command = ". {{ .Vars }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
 
   provisioner_env = [
     "ANSIBLE_CONFIG=/tmp/ansible.cfg",
     "BUILD_USERNAME=${var.username}",
     "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    "SUDO_PASSWORD=${var.password}",
     "SYFT_VERSION=${var.syft_version}",
   ]
 }
@@ -150,13 +152,14 @@ build {
   sources = ["source.azure-arm.hardened"]
 
   provisioner "file" {
-    sources     = ["config/ansible.cfg", "config/local.yml"]
+    sources     = ["config/ansible.cfg", "config/local.yml", "config/requirements.yml"]
     destination = "/tmp/"
   }
 
   provisioner "shell" {
     environment_vars  = local.provisioner_env
     execute_command   = local.sudo_command
+    use_env_var_file  = true
     expect_disconnect = true
     pause_before      = "10s"
     remote_folder     = "/var/tmp"
@@ -186,8 +189,18 @@ build {
   provisioner "shell" {
     environment_vars  = local.provisioner_env
     execute_command   = local.sudo_command
+    use_env_var_file  = true
     expect_disconnect = true
     pause_before      = "10s"
+    remote_folder     = "/var/tmp"
+    scripts           = ["${path.root}/scripts/cleanup.sh"]
+  }
+
+  error-cleanup-provisioner "shell" {
+    environment_vars  = local.provisioner_env
+    execute_command   = local.sudo_command
+    use_env_var_file  = true
+    expect_disconnect = true
     remote_folder     = "/var/tmp"
     scripts           = ["${path.root}/scripts/cleanup.sh"]
   }
