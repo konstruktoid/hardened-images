@@ -1,14 +1,26 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/error-handling.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Failure handling: traps, cleanup, exit codes, locking
 
 A script that stops halfway is the normal case, not the exceptional one. What matters is what it
 leaves behind and what it tells its caller.
+
+## Contents
+
+- Cleanup with a trap
+- Signals
+- Reporting the failure
+- Exit codes are an interface
+- Timeouts
+- Retries
+- Concurrency
+- Partial completion
 
 ## Cleanup with a trap
 

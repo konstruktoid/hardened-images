@@ -1,8 +1,9 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/filesystem.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Files, temporary directories, and destructive commands
@@ -10,6 +11,15 @@ Do not edit locally; re-vendor from upstream instead.
 Most of what a script does is create, move, and delete files, usually in directories other users
 can also write to. The failure modes are predictable names, races, and expansions that produce a
 path nobody intended.
+
+## Contents
+
+- Temporary files
+- Races in shared directories
+- Destructive commands
+- Writing files
+- Trusting a file before reading it
+- Downloaded artifacts
 
 ## Temporary files
 
@@ -73,7 +83,7 @@ rm -rf -- "${target}"
   string, which is the case that produces `rm -rf /`.
 - **`${var:?}` is not a destructive-operation guard on its own.** It rejects unset and empty, and
   nothing else: `/`, `//`, `.`, `..`, `${HOME}`, and `/tmp/..` all pass it and all resolve
-  somewhere the script has no business deleting. The guard is the second check — resolve the path
+  somewhere the script has no business deleting. The guard is the second check: resolve the path
   and confirm it sits under a directory the script owns, either an allowlisted parent as above or
   a directory the script created itself with `mktemp -d`. Delete only paths the script created or
   was configured to manage.

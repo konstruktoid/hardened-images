@@ -1,0 +1,12 @@
+---
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        slsa-framework/slsa-github-generator/*: ref-pin
+
+        "*": hash-pin
+
+  superfluous-actions:
+    ignore:
+      - slsa.yml

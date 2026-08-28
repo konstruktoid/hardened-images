@@ -1,8 +1,9 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/environment.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Environment, PATH, and privilege
@@ -10,6 +11,15 @@ Do not edit locally; re-vendor from upstream instead.
 A script inherits its environment from whoever started it. Where the script has more privilege than
 that caller, or runs unattended, the environment is input and needs the same treatment as any other
 input.
+
+## Contents
+
+- PATH
+- Variables the caller controls
+- Privilege
+- umask and file modes
+- Dependencies
+- The contexts a script actually runs in
 
 ## PATH
 

@@ -1,8 +1,9 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/bash/bash-secure-scripting/references/strict-mode.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Strict mode, and what it does not cover
@@ -10,6 +11,18 @@ Do not edit locally; re-vendor from upstream instead.
 `set -Eeuo pipefail` is the starting line of a Bash script, not a guarantee. It removes the most
 common ways a script continues after a failure, and it has documented exceptions that hide the
 rest. Knowing the exceptions is the point of this file.
+
+## Contents
+
+- What each option does
+- Where errexit is ignored
+- Capturing a status without losing errexit
+- pipefail and PIPESTATUS
+- nounset details
+- Globbing options
+- IFS
+- Subshells swallow state and failures
+- Verify strict-mode assumptions by running the failure path
 
 ## What each option does
 

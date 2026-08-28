@@ -1,14 +1,23 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/github/github-actions-security/references/scalability.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Scalability and Governance
 
 Read this when a workflow is repeated across repositories, when creating a reusable workflow or
 composite action, or when workflow runtime, cost, or organization-wide policy is in scope.
+
+## Contents
+
+- Reusable workflow or composite action
+- A shared workflow repository
+- Organization and enterprise controls
+- Cost and runtime
+- Checklist
 
 ## Reusable workflow or composite action
 

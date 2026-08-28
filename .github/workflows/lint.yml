@@ -1,0 +1,86 @@
+---
+name: "Lint"
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: "Lint"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 15
+    permissions:
+      contents: "read"
+    steps:
+      - name: "Harden Runner"
+        uses: "step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c" # v2.21.0
+        with:
+          egress-policy: "audit"
+
+      - name: "Checkout repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Run shellcheck"
+        run: |
+          shellcheck -x -s bash -f gcc \
+            build_box.sh run_qemu.sh azure_vars_export scripts/*.sh tools/*.sh
+
+      - name: "Check shell syntax"
+        run: |
+          for script in build_box.sh run_qemu.sh scripts/*.sh tools/*.sh; do
+            bash -n "${script}"
+          done
+
+      - name: "Set up Packer"
+        uses: "hashicorp/setup-packer@ce93c3c08a6c2ff2275bf4b54ff0d9a75f6c9789" # v3.4.0
+        with:
+          version: "1.16.0"
+
+      - name: "Check Packer formatting"
+        run: "packer fmt -check -diff ."
+
+      - name: "Validate the QEMU template"
+        run: |
+          key_dir="$(mktemp --directory)"
+          ssh-keygen -t ed25519 -N "" -C ci -f "${key_dir}/id_ed25519" -q
+          packer init -upgrade ./ubuntu-hardened-qemu.pkr.hcl
+          packer validate \
+            -var "ssh_public_key_file=${key_dir}/id_ed25519.pub" \
+            -var "ssh_private_key_file=${key_dir}/id_ed25519" \
+            ./ubuntu-hardened-qemu.pkr.hcl
+          rm -rf "${key_dir}"
+
+      - name: "Validate the Azure template"
+        env:
+          ARM_CLIENT_ID: "00000000-0000-0000-0000-000000000000"
+          ARM_CLIENT_SECRET: "validate-only"
+          ARM_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000"
+          ARM_TENANT_ID: "00000000-0000-0000-0000-000000000000"
+          MY_IP_ADDRESS: "203.0.113.1"
+        run: |
+          packer init -upgrade ./ubuntu-hardened-azure.pkr.hcl
+          packer validate -var-file ubuntu-azure-vars.json ./ubuntu-hardened-azure.pkr.hcl
+
+      - name: "Run actionlint"
+        uses: "raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7" # v2.2.0
+
+      - name: "Run zizmor"
+        uses: "zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054" # v0.6.2
+        with:
+          advanced-security: false
+
+      - name: "Run ansible-lint"
+        uses: "ansible/ansible-lint@665d9e07a1943254d2910faffc106adaf7ea7294" # v26.8.0
+        with:
+          args: "config/"

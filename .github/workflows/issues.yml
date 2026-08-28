@@ -1,24 +1,30 @@
-name: Issue assignment
+---
+name: "Issue assignment"
 
 on:
   issues:
-    types: [opened]
+    types: ["opened"]
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.issue.number }}"
+  cancel-in-progress: false
 
 jobs:
   auto-assign:
+    name: "Auto-assign issue"
     permissions:
-      issues: write
-    runs-on: ubuntu-latest
+      issues: "write"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+      - name: "Harden Runner"
+        uses: "step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c" # v2.21.0
         with:
-          egress-policy: audit
+          egress-policy: "audit"
 
-      - name: 'auto-assign issue'
-        uses: pozil/auto-assign-issue@af6beea6bdf1e8eb373f061c5bc168681fc6d011 # v4.0.1
+      - name: "auto-assign issue"
+        uses: "pozil/auto-assign-issue@af6beea6bdf1e8eb373f061c5bc168681fc6d011" # v4.0.1
         with:
-          assignees: konstruktoid
+          assignees: "konstruktoid"

@@ -1,14 +1,23 @@
 <!--
 Vendored from https://github.com/konstruktoid/agent-instructions-skills
 skills/github/github-actions-security/references/untrusted-input.md
-Upstream commit: a05445ea232a635d1803138a365d7a6868d693d2
-Do not edit locally; re-vendor from upstream instead.
+Upstream ref: v0.1.0
+Upstream commit: 994be479cf1d44d5ee69d0334da07e923d8dee2e
+Do not edit locally; re-vendor with tools/vendor-agent-standards.sh instead.
 -->
 
 # Untrusted Input and Dangerous Triggers
 
 Read this when a workflow reads event data, or uses `pull_request_target`, `workflow_run`, or a
 comment-driven trigger.
+
+## Contents
+
+- Why `${{ }}` in a `run:` block is dangerous
+- Untrusted contexts
+- Trigger risk
+- Fork pull request settings
+- Checklist
 
 ## Why `${{ }}` in a `run:` block is dangerous
 

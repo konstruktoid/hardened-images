@@ -1,6 +1,9 @@
 #!/bin/bash
+set -euo pipefail
 
-set -eux
+HARDENING_ROLE_VERSION="${HARDENING_ROLE_VERSION:-v4.4.1}"
+
+BUILD_USERNAME="${BUILD_USERNAME:-ubuntu}"
 
 export ANSIBLE_PRIVATE_ROLE_VARS=true
 export DEBIAN_FRONTEND=noninteractive
@@ -13,17 +16,26 @@ apt-get --assume-yes --no-install-recommends --update install git pipx
 pipx install ansible-core
 pipx ensurepath
 
-curl -fsSL https://raw.githubusercontent.com/konstruktoid/ansible-role-hardening/master/requirements.yml | tee /tmp/requirements.yml
+REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-/tmp/requirements.yml}"
 
-ansible-galaxy install -r /tmp/requirements.yml
+if [ ! -f "${REQUIREMENTS_FILE}" ]; then
+  printf 'error: requirements file not found: %s\n' "${REQUIREMENTS_FILE}" >&2
+  exit 1
+fi
 
-cd /tmp || exit 1
+cat "${REQUIREMENTS_FILE}"
 
-ansible-playbook -i '127.0.0.1,' -c local ./local.yml
+ansible-galaxy install -r "${REQUIREMENTS_FILE}"
 
-if id ubuntu > /dev/null 2>&1; then
-  chage --maxdays 365 ubuntu
-  chage --mindays 1 ubuntu
+cd /tmp
+
+ansible-playbook -i '127.0.0.1,' -c local \
+  -e "hardening_role_version=${HARDENING_ROLE_VERSION}" \
+  ./local.yml
+
+if id "${BUILD_USERNAME}" > /dev/null 2>&1; then
+  chage --maxdays 365 "${BUILD_USERNAME}"
+  chage --mindays 1 "${BUILD_USERNAME}"
 fi
 
 rm -rvf /tmp/*.yml /tmp/*.cfg /etc/ansible
@@ -32,7 +44,6 @@ rm -rf "${HOME}/.ansible"
 pipx uninstall-all
 rm -rf "${HOME}/.local"
 
-unset PATH
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 apt-get --assume-yes purge git pipx open-vm-tools "linux-headers-$(uname -r)" linux-headers-generic
