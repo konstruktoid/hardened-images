@@ -47,7 +47,7 @@ jobs:
             ./scripts/*.sh \
             ./tools/*.sh \
             ./config/* \
-            ./http/* \
+            ./seed/* \
             > "${REPOSITORY_NAME}.sha256"
 
       - name: "Generate hashes"

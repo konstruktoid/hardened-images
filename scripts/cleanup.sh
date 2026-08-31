@@ -49,11 +49,14 @@ else
   rm -f "${BUILD_USER_HOME}/.ssh/authorized_keys"
 fi
 rm -f /tmp/authorized_keys
+rm -rf "${BUILD_USER_HOME}/.ssh/agent"
+rm -rf /root/.ssh
 
 systemd-tmpfiles --clean
 systemd-tmpfiles --remove
 
-rm -rvf /etc/apt/sources.list.d/*
+# Ubuntu's own repositories are deb822 .sources since 24.04, and removing them leaves no package sources.
+find /etc/apt/sources.list.d -maxdepth 1 -type f -name '*.list' -print -delete
 
 KERNEL_RELEASE="$(uname -r)"
 
@@ -64,10 +67,12 @@ purge_matching 'linux-source'
 purge_matching '-doc$'
 purge_matching '-dev(:[a-z0-9]+)?$'
 
-for PACKAGE in ansible bash-completion command-not-found command-not-found-data \
+# Purging wget takes ssh-import-id with it; netcat-openbsd stays because cloud-init-base requires it.
+for PACKAGE in ansible bash-completion command-not-found command-not-found-data curl \
   fonts-ubuntu-console fonts-ubuntu-font-family-console friendly-recovery \
   grub-legacy-ec2 installation-report laptop-detect libx11-6 libx11-data libxcb1 \
-  libxext6 libxmuu1 motd-news-config popularity-contest ppp pppconfig pppoeconf usbutils xauth; do
+  libxext6 libxmuu1 motd-news-config popularity-contest ppp pppconfig pppoeconf usbutils \
+  wget xauth; do
   apt-get --assume-yes purge "${PACKAGE}" || true
 done
 
@@ -83,12 +88,40 @@ rm -rf /usr/share/doc/*
 apt-get --assume-yes autoremove
 apt-get --assume-yes clean
 
+find /var/lib/apt/lists -maxdepth 1 -type f ! -name lock -delete
+rm -f /var/lib/dpkg/status-old /var/lib/dpkg/available-old
+
 find / -xdev -type f \( -name '*.bak' -o -name '*.old' -o -name '*.orig' \) -delete
 
 find /var/cache -xdev -type f -delete
 find /var/log -xdev -type f -exec truncate --size=0 {} +
 
 find /home -xdev -type d -name '.ansible' -prune -exec rm -rf {} +
+
+find /root /home -xdev -maxdepth 2 -type d -name '.cache' -exec rm -rf {} +
+
+journalctl --rotate
+journalctl --vacuum-time=1s
+rm -rf /var/log/journal/*
+
+# cloud-init pins the build VM's MAC address here, leaving no matching interface elsewhere.
+rm -f /etc/netplan/50-cloud-init.yaml
+install -m 0600 /dev/null /etc/netplan/01-dhcp-all-ethernets.yaml
+cat > /etc/netplan/01-dhcp-all-ethernets.yaml <<'_EOF_'
+network:
+  version: 2
+  ethernets:
+    all-ethernets:
+      match:
+        name: "en*"
+      dhcp4: true
+      dhcp6: true
+_EOF_
+
+# The build-time NoCloud seed and instance state must not become the shipped image's identity.
+if command -v cloud-init > /dev/null 2>&1; then
+  cloud-init clean --logs --seed
+fi
 
 truncate -s 0 /etc/machine-id
 

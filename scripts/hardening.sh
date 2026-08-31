@@ -11,6 +11,11 @@ export HISTSIZE=0
 export HISTFILESIZE=0
 export PATH="${PATH}:${HOME}/.local/bin"
 
+# cloud-init still holds the dpkg lock and rewrites user and SSH settings while sshd already accepts connections.
+if command -v cloud-init > /dev/null 2>&1; then
+  cloud-init status --wait || cloud-init status --long
+fi
+
 apt-get --assume-yes --no-install-recommends --update install git pipx
 
 pipx install ansible-core

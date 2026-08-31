@@ -47,10 +47,13 @@ fi
 
 printf 'Booting %s\n' "${QCOW2_IMAGE}"
 printf 'SSH once booted: ssh -p %s ubuntu@localhost\n' "${SSH_PORT}"
+printf 'Guest writes are discarded on shutdown, so the image still matches CHECKSUMS.\n'
 
+# -snapshot keeps the built image byte-identical, so its recorded CHECKSUMS still verify.
 qemu-system-x86_64 \
   "${ACCEL_ARGS[@]}" \
   -m "${VM_MEMORY}" \
+  -snapshot \
   -drive if=pflash,format=raw,readonly=on,file="${OVMF_CODE}" \
   -drive if=pflash,format=raw,file="${VARS_FILE}" \
   -drive if=virtio,format=qcow2,file="${QCOW2_IMAGE}" \

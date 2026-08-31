@@ -11,14 +11,20 @@ packer {
 
 variable "iso_url" {
   type        = string
-  default     = "https://releases.ubuntu.com/26.04/ubuntu-26.04-live-server-amd64.iso"
-  description = "Ubuntu 26.04 live-server ISO."
+  default     = "https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img"
+  description = "Ubuntu cloud image used as the base disk. Point this at another release directory to build a different release."
 }
 
 variable "iso_checksum" {
   type        = string
-  default     = "sha256:dec49008a71f6098d0bcfc822021f4d042d5f2db279e4d75bdd981304f1ca5d9"
-  description = "Checksum of iso_url, from https://releases.ubuntu.com/26.04/SHA256SUMS."
+  default     = "sha256:8196be9d7958059cb56c6c75c80fdf6cee8a8885bc149ea791d7db1c7ef93035"
+  description = "Checksum of iso_url, from the SHA256SUMS file next to it. current/ is republished daily, so this needs refreshing whenever the upstream image changes."
+}
+
+variable "release_version" {
+  type        = string
+  default     = "26.04"
+  description = "Ubuntu release version of var.iso_url, used to name the output image."
 }
 
 variable "disk_size" {
@@ -78,7 +84,7 @@ variable "syft_version" {
 variable "username" {
   type        = string
   default     = "ubuntu"
-  description = "Login and SSH username created by autoinstall."
+  description = "Login and SSH username configured by cloud-init."
 }
 
 variable "password" {
@@ -118,12 +124,14 @@ variable "ssh_authorized_keys" {
 
 locals {
   timestamp     = regex_replace(timestamp(), "[- TZ:]", "")
-  image_name    = "ubuntu-26.04-x86_64-${local.timestamp}"
+  image_name    = "ubuntu-${var.release_version}-x86_64-${local.timestamp}"
   output_dir    = "${path.root}/output"
   build_dir     = "${path.root}/output/${local.image_name}"
   build_pub_key = trimspace(file(var.ssh_public_key_file))
 
-  sudo_command = ". {{ .Vars }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+  sudo_command = ". {{ .EnvVarFile }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+
+  identity_wipe = "rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub; : > /etc/machine-id; find /var/log -xdev -type f -exec truncate --size=0 {} +; rm -rf /var/log/journal/* /root/.ssh; rm -f /var/lib/systemd/random-seed"
 
   provisioner_env = [
     "BUILD_USERNAME=${var.username}",
@@ -136,6 +144,7 @@ locals {
 source "qemu" "hardened" {
   iso_url          = var.iso_url
   iso_checksum     = var.iso_checksum
+  disk_image       = true
   output_directory = local.build_dir
   vm_name          = "${local.image_name}.qcow2"
 
@@ -153,9 +162,10 @@ source "qemu" "hardened" {
   efi_firmware_code = var.qemu_efi_firmware_code
   efi_firmware_vars = var.qemu_efi_firmware_vars
 
-  http_content = {
-    "/meta-data" = file("${path.root}/http/meta-data")
-    "/user-data" = templatefile("${path.root}/http/user-data.pkrtpl.hcl", {
+  cd_label = "cidata"
+  cd_content = {
+    "meta-data" = file("${path.root}/seed/meta-data")
+    "user-data" = templatefile("${path.root}/seed/user-data.pkrtpl.hcl", {
       hostname             = "ubuntu-hardened"
       username             = var.username
       password_hash        = var.password_hash
@@ -165,19 +175,11 @@ source "qemu" "hardened" {
 
   qemuargs = [["-serial", "file:${local.build_dir}/serial.log"]]
 
-  boot_wait = "5s"
-  boot_command = [
-    "e<wait5>",
-    "<down><down><down><end>",
-    " autoinstall console=ttyS0,115200n8 ds=\"nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/\"",
-    "<f10>"
-  ]
-
   ssh_username         = var.username
   ssh_private_key_file = var.ssh_private_key_file
   ssh_timeout          = "1h"
 
-  shutdown_command = "echo '${var.password}' | sudo -S shutdown -P now"
+  shutdown_command = "echo '${var.password}' | sudo -S bash -c '${local.identity_wipe}; shutdown -P now'"
   shutdown_timeout = "15m"
 }
 
