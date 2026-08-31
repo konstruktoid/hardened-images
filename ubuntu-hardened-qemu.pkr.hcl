@@ -91,7 +91,7 @@ variable "password" {
   type        = string
   default     = "ubuntu"
   sensitive   = true
-  description = "Plaintext login password for var.username, used to authenticate sudo during provisioning and at shutdown."
+  description = "Plaintext login password for var.username, used to authenticate sudo during provisioning."
 
   validation {
     condition     = can(regex("^[A-Za-z0-9_@%+=:,./-]+$", var.password))
@@ -129,13 +129,12 @@ locals {
   build_dir     = "${path.root}/output/${local.image_name}"
   build_pub_key = trimspace(file(var.ssh_public_key_file))
 
-  sudo_command = ". {{ .EnvVarFile }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
-
-  identity_wipe = "rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub; : > /etc/machine-id; find /var/log -xdev -type f -exec truncate --size=0 {} +; rm -rf /var/log/journal/* /root/.ssh; rm -f /var/lib/systemd/random-seed"
+  sudo_command = ". {{ .EnvVarFile }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=BUILD_USERNAME,HARDENING_ROLE_VERSION,POWEROFF_AFTER_CLEANUP,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
 
   provisioner_env = [
     "BUILD_USERNAME=${var.username}",
     "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    "POWEROFF_AFTER_CLEANUP=true",
     "SUDO_PASSWORD=${var.password}",
     "SYFT_VERSION=${var.syft_version}",
   ]
@@ -179,7 +178,8 @@ source "qemu" "hardened" {
   ssh_private_key_file = var.ssh_private_key_file
   ssh_timeout          = "1h"
 
-  shutdown_command = "echo '${var.password}' | sudo -S bash -c '${local.identity_wipe}; shutdown -P now'"
+  # scripts/cleanup.sh arms the poweroff as root, so no password travels the guest command line.
+  shutdown_command = "true"
   shutdown_timeout = "15m"
 }
 

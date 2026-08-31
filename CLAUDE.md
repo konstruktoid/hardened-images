@@ -81,8 +81,13 @@ Ansible role. The role code is external; it is installed and configured by the A
   still runs standalone. Change the version in the template variable, not in
   the script. The sudo password travels the same way, as `SUDO_PASSWORD` in
   the provisioner environment file (`use_env_var_file = true`); never
-  interpolate `var.password` into `execute_command`, and keep it out of
-  `--preserve-env` so sudo drops it before the script runs.
+  interpolate `var.password` into `execute_command` or `shutdown_command`, and
+  keep it out of `--preserve-env` so sudo drops it before the script runs.
+  The QEMU template therefore sets `POWEROFF_AFTER_CLEANUP=true`, which makes
+  `scripts/cleanup.sh` arm the poweroff itself while it still has root, and its
+  `shutdown_command` is a bare `true` that only makes Packer wait for the
+  machine to go down. The Azure builder deprovisions on its own and must not
+  get that variable.
 - `tools/vendor-agent-standards.sh` — repository tooling, not provisioning.
   Nothing under `tools/` is uploaded into an image.
 - `build_box.sh` — orchestrates the full local QEMU build lifecycle

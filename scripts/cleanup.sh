@@ -6,6 +6,7 @@ set -euo pipefail
 BUILD_USERNAME="${BUILD_USERNAME:-ubuntu}"
 BUILD_USER_HOME="$(getent passwd "${BUILD_USERNAME}" | cut -d: -f6)"
 BUILD_USER_HOME="${BUILD_USER_HOME:-/home/${BUILD_USERNAME}}"
+POWEROFF_AFTER_CLEANUP="${POWEROFF_AFTER_CLEANUP:-false}"
 
 export DEBIAN_FRONTEND=noninteractive
 export HISTSIZE=0
@@ -154,3 +155,15 @@ ExecStartPre=/usr/sbin/sshd -t
 _EOF_
 
 rm -vf /root/.*history
+
+# The QEMU build powers the machine off from here, as root, so that Packer's shutdown_command
+# does not have to carry the sudo password. The timer also truncates whatever this script and
+# the remaining session wrote after the wipe above. The Azure builder deprovisions on its own
+# and must never see this.
+if [ "${POWEROFF_AFTER_CLEANUP}" = "true" ]; then
+  systemd-run --collect --unit=packer-poweroff --on-active=30 \
+    bash -c 'find /var/log -xdev -type f -exec truncate --size=0 {} +;
+      rm -rf /var/log/journal/*;
+      rm -f /var/lib/systemd/random-seed;
+      systemctl poweroff'
+fi

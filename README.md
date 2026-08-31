@@ -246,11 +246,15 @@ The pinned versions that a build depends on are set in the templates:
 
 The templates hand these to the provisioning scripts as environment
 variables: both pass `HARDENING_ROLE_VERSION`, `SYFT_VERSION` and
-`BUILD_USERNAME`, and the Azure template also passes `ANSIBLE_CONFIG`. The
+`BUILD_USERNAME`, the Azure template also passes `ANSIBLE_CONFIG`, and the QEMU
+template also passes `POWEROFF_AFTER_CLEANUP`. The
 password sudo authenticates with is passed the same way, as `SUDO_PASSWORD` in
 the provisioner environment file (`use_env_var_file`), so it never appears in
 the command Packer logs or in the guest's process list, and `--preserve-env`
-omits it so sudo drops it before the script runs.
+omits it so sudo drops it before the script runs. For the same reason the QEMU
+build powers the machine off from `scripts/cleanup.sh`, which already runs as
+root, and its `shutdown_command` is a bare `true` that only makes Packer wait
+for that poweroff.
 `scripts/hardening.sh` and `config/local.yml` (role tag), `scripts/sbom.sh` (Syft) and
 `scripts/cleanup.sh` (username) each carry a matching fallback default so they
 still run standalone. Change the version in the template variable, then keep
