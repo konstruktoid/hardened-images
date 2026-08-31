@@ -9,6 +9,7 @@
 _azure_vars_export() {
   local cmd vars_file location resource_group principal_name
   local principal_id credential_json role_scope my_ip
+  local access_token arm_status attempt
 
   for cmd in az jq curl; do
     if ! command -v "${cmd}" > /dev/null 2>&1; then
@@ -76,6 +77,54 @@ _azure_vars_export() {
       --assignee "${ARM_CLIENT_ID}" \
       --role Contributor \
       --scope "${role_scope}" || return 1
+  fi
+
+  # A reset secret is not usable immediately, and an RBAC assignment can take minutes to propagate,
+  # so poll a harmless ARM read at role_scope rather than only the token endpoint.
+  arm_status=""
+  attempt=1
+  while [ "${attempt}" -le 12 ]; do
+    access_token="$(
+      printf 'grant_type=client_credentials&client_id=%s&client_secret=%s&scope=%s' \
+        "${ARM_CLIENT_ID}" \
+        "$(printf '%s' "${ARM_CLIENT_SECRET}" | jq -sRr @uri)" \
+        'https%3A%2F%2Fmanagement.azure.com%2F.default' \
+        | curl -sS --max-time 15 \
+          -H 'Content-Type: application/x-www-form-urlencoded' \
+          --data-binary @- \
+          "https://login.microsoftonline.com/${ARM_TENANT_ID}/oauth2/v2.0/token" \
+        | jq -r '.access_token // empty'
+    )"
+
+    if [ -n "${access_token}" ]; then
+      # The token goes in a curl config file on stdin so it never appears in the process list.
+      arm_status="$(
+        printf 'header = "Authorization: Bearer %s"\nurl = "%s"\n' \
+          "${access_token}" \
+          "https://management.azure.com${role_scope}?api-version=2021-04-01" \
+          | curl -sS -o /dev/null -w '%{http_code}' --max-time 15 --config -
+      )"
+    else
+      arm_status="no-token"
+    fi
+
+    access_token=""
+
+    if [ "${arm_status}" = "200" ]; then
+      break
+    fi
+
+    if [ "${attempt}" -lt 12 ]; then
+      sleep 10
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  if [ "${arm_status}" != "200" ]; then
+    printf 'error: %s was still not readable by the service principal after 12 attempts (last result %s)\n' \
+      "${role_scope}" "${arm_status}" >&2
+    return 1
   fi
 
   my_ip="${MY_IP_ADDRESS:-$(curl -fsS --max-time 5 https://api.ipify.org)}"

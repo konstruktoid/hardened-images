@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 [Packer](https://www.packer.io/) templates. Targets are an
 [Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
 and a local [QEMU](https://www.qemu.org/) `.qcow2` disk image (a former `.ova`
-target is documented in git history only). Ubuntu 26.04 LTS (Resolute
-Raccoon) is the supported release. Hardening is applied by the external
+target is documented in git history only). The QEMU target starts from the
+official Ubuntu cloud image; Ubuntu 26.04 LTS (Resolute Raccoon) is the default.
+Hardening is applied by the external
 [konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
 Ansible role. The role code is external; it is installed and configured by the Ansible playbook in `config/local.yml`
 (with settings from `config/ansible.cfg`).
@@ -17,9 +18,9 @@ Ansible role. The role code is external; it is installed and configured by the A
 ## Commands
 
 - `bash build_box.sh` — builds the local `.qcow2` image: generates a
-  throwaway SSH keypair, boots the official Ubuntu 26.04 live-server ISO in
-  QEMU, installs it unattended via the autoinstall config in
-  `http/user-data.pkrtpl.hcl`, provisions with `konstruktoid.hardening`,
+  throwaway SSH keypair, boots the official Ubuntu cloud image in QEMU,
+  configures it on first boot from the NoCloud `cidata` seed in
+  `seed/user-data.pkrtpl.hcl`, provisions with `konstruktoid.hardening`,
   generates an SBOM (`scripts/sbom.sh`, Syft) and then strips the ephemeral
   keypair (`scripts/cleanup.sh`, always last). Extra args are passed through
   to `packer build`, e.g.
@@ -56,11 +57,15 @@ Ansible role. The role code is external; it is installed and configured by the A
   templates upload it and `scripts/hardening.sh` installs from it, so nothing
   is fetched from a mutable ref at build time. Keep it in sync when bumping
   the role version.
-- `http/user-data.pkrtpl.hcl` (+ `http/meta-data`) — cloud-init/autoinstall
-  template used to unattended-install Ubuntu inside QEMU.
-- `scripts/hardening.sh` — invokes the Ansible provisioning step.
-  `scripts/cleanup.sh` — strips the ephemeral Packer SSH keypair before the
-  build finishes; must always run, and must run last. `scripts/sbom.sh` —
+- `seed/user-data.pkrtpl.hcl` (+ `seed/meta-data`) — cloud-init NoCloud seed,
+  attached to the build VM as a `cidata` CD-ROM via `cd_content`. It sets the
+  build user's password hash with `hashed_passwd`, because cloud-init ignores
+  `passwd` for the `ubuntu` account the cloud image already ships.
+- `scripts/hardening.sh` — waits for cloud-init to settle, then invokes the
+  Ansible provisioning step.
+  `scripts/cleanup.sh` — strips the ephemeral Packer SSH keypair and resets
+  cloud-init's seed and instance state before the build finishes; must always
+  run, and must run last. `scripts/sbom.sh` —
   generates SPDX/CycloneDX SBOMs with Syft, downloading and checksum-verifying
   the pinned release rather than piping an installer into a shell. Both
   templates run it, and because `scripts/cleanup.sh` has to stay last, the SBOM
@@ -76,12 +81,20 @@ Ansible role. The role code is external; it is installed and configured by the A
   still runs standalone. Change the version in the template variable, not in
   the script. The sudo password travels the same way, as `SUDO_PASSWORD` in
   the provisioner environment file (`use_env_var_file = true`); never
-  interpolate `var.password` into `execute_command`, and keep it out of
-  `--preserve-env` so sudo drops it before the script runs.
+  interpolate `var.password` into `execute_command` or `shutdown_command`, and
+  keep it out of `--preserve-env` so sudo drops it before the script runs.
+  The QEMU template therefore sets `POWEROFF_AFTER_CLEANUP=true`, which makes
+  `scripts/cleanup.sh` arm the poweroff itself while it still has root, and its
+  `shutdown_command` is a bare `true` that only makes Packer wait for the
+  machine to go down. The Azure builder deprovisions on its own and must not
+  get that variable.
 - `tools/vendor-agent-standards.sh` — repository tooling, not provisioning.
   Nothing under `tools/` is uploaded into an image.
 - `build_box.sh` — orchestrates the full local QEMU build lifecycle
   (keypair generation, `packer build`, cleanup, SBOM, checksums).
+- `run_qemu.sh` — boots a built image for inspection. It passes `-snapshot`, so
+  guest writes are discarded and the `.qcow2` keeps matching its `CHECKSUMS`
+  entry; without it, booting an image invalidates the recorded checksum.
 - `azure_vars_export` — creates/resets the Azure service principal, exports
   `ARM_*` credentials into the current shell, and detects the caller's public
   IP so the build VM's NSG only allows inbound SSH from that address. Never

@@ -49,6 +49,17 @@ variable "image_sku" {
   }
 }
 
+variable "managed_image_storage_account_type" {
+  type        = string
+  default     = "Standard_LRS"
+  description = "Managed image OS disk SKU. Only Standard_LRS and Premium_LRS are accepted; managed images cannot use StandardSSD."
+
+  validation {
+    condition     = contains(["Standard_LRS", "Premium_LRS"], var.managed_image_storage_account_type)
+    error_message = "The managed_image_storage_account_type must be Standard_LRS or Premium_LRS."
+  }
+}
+
 variable "vm_size" {
   type        = string
   description = "Size of the VM used to build the image."
@@ -110,7 +121,7 @@ locals {
   image_name = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
   build_dir  = "${path.root}/output/${local.image_name}"
 
-  sudo_command = ". {{ .Vars }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+  sudo_command = ". {{ .EnvVarFile }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
 
   provisioner_env = [
     "ANSIBLE_CONFIG=/tmp/ansible.cfg",
@@ -133,7 +144,9 @@ source "azure-arm" "hardened" {
   os_type         = "Linux"
   vm_size         = var.vm_size
 
-  build_resource_group_name         = var.resource_group
+  build_resource_group_name          = var.resource_group
+  managed_image_storage_account_type = var.managed_image_storage_account_type
+
   managed_image_resource_group_name = var.resource_group
   managed_image_name                = local.image_name
 
