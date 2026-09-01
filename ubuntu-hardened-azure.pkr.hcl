@@ -104,10 +104,10 @@ variable "password" {
   }
 }
 
-variable "hardening_role_version" {
+variable "hardening_collection_version" {
   type        = string
-  default     = "v4.4.1"
-  description = "Tag of konstruktoid/ansible-role-hardening to provision with. Must match the version pinned in config/local.yml."
+  default     = "v0.3.2"
+  description = "Tag of konstruktoid/ansible-collection-hardening to provision with. Must match the default in scripts/hardening.sh."
 }
 
 variable "syft_version" {
@@ -121,12 +121,12 @@ locals {
   image_name = "hardened-ubuntu-${var.image_sku}-${local.timestamp}"
   build_dir  = "${path.root}/output/${local.image_name}"
 
-  sudo_command = ". {{ .EnvVarFile }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_ROLE_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
+  sudo_command = ". {{ .EnvVarFile }}; echo \"$SUDO_PASSWORD\" | sudo -S --preserve-env=ANSIBLE_CONFIG,BUILD_USERNAME,HARDENING_COLLECTION_VERSION,SYFT_VERSION bash -eux -o pipefail '{{ .Path }}'"
 
   provisioner_env = [
     "ANSIBLE_CONFIG=/tmp/ansible.cfg",
     "BUILD_USERNAME=${var.username}",
-    "HARDENING_ROLE_VERSION=${var.hardening_role_version}",
+    "HARDENING_COLLECTION_VERSION=${var.hardening_collection_version}",
     "SUDO_PASSWORD=${var.password}",
     "SYFT_VERSION=${var.syft_version}",
   ]

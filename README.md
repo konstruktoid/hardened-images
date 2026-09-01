@@ -12,11 +12,14 @@ is the default base image. Point `var.iso_url` and `var.iso_checksum` at
 another directory under [cloud-images.ubuntu.com](https://cloud-images.ubuntu.com/)
 to build a different release, and set `var.release_version` to match.
 
-The Ansible role used to make the server a bit more secure is available in the
-[konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
+The Ansible collection used to make the server a bit more secure is available
+in the
+[konstruktoid/ansible-collection-hardening](https://github.com/konstruktoid/ansible-collection-hardening)
 repository.
 
-The role is installed and configured using [config/local.yml](./config/local.yml).
+The collection is a set of independent, single-purpose roles rather than one
+umbrella role, so [config/local.yml](./config/local.yml) selects the roles to
+apply and configures them.
 
 See the Packer
 [builders](https://developer.hashicorp.com/packer/docs/builders) and
@@ -200,8 +203,8 @@ ssh -p 2222 ubuntu@localhost
 ├── CLAUDE.md             # Repository guidance for coding agents
 ├── config
 │   ├── ansible.cfg
-│   ├── local.yml         # Installs and configures konstruktoid.hardening
-│   └── requirements.yml  # Collections konstruktoid.hardening needs
+│   ├── local.yml         # Selects and configures konstruktoid.hardening roles
+│   └── requirements.yml  # Collections konstruktoid.hardening depends on
 ├── seed
 │   ├── meta-data
 │   └── user-data.pkrtpl.hcl  # cloud-init NoCloud configuration
@@ -238,14 +241,14 @@ The pinned versions that a build depends on are set in the templates:
 | Pinned thing | Where |
 |---|---|
 | Packer core and plugins | `packer` block in each `*.pkr.hcl` |
-| `konstruktoid.hardening` role tag | `var.hardening_role_version` |
-| Collections the role needs | `config/requirements.yml` |
+| `konstruktoid.hardening` collection tag | `var.hardening_collection_version` |
+| Collections it depends on | `config/requirements.yml` |
 | Syft | `var.syft_version` |
 | Ubuntu cloud image and its checksum | `var.iso_url` / `var.iso_checksum` (QEMU only) |
 | Agent skills and instructions | `DEFAULT_UPSTREAM_REF` / `DEFAULT_UPSTREAM_COMMIT` in `tools/vendor-agent-standards.sh` |
 
 The templates hand these to the provisioning scripts as environment
-variables: both pass `HARDENING_ROLE_VERSION`, `SYFT_VERSION` and
+variables: both pass `HARDENING_COLLECTION_VERSION`, `SYFT_VERSION` and
 `BUILD_USERNAME`, the Azure template also passes `ANSIBLE_CONFIG`, and the QEMU
 template also passes `POWEROFF_AFTER_CLEANUP`. The
 password sudo authenticates with is passed the same way, as `SUDO_PASSWORD` in
@@ -255,16 +258,17 @@ omits it so sudo drops it before the script runs. For the same reason the QEMU
 build powers the machine off from `scripts/cleanup.sh`, which already runs as
 root, and its `shutdown_command` is a bare `true` that only makes Packer wait
 for that poweroff.
-`scripts/hardening.sh` and `config/local.yml` (role tag), `scripts/sbom.sh` (Syft) and
+`scripts/hardening.sh` (collection tag), `scripts/sbom.sh` (Syft) and
 `scripts/cleanup.sh` (username) each carry a matching fallback default so they
 still run standalone. Change the version in the template variable, then keep
 those defaults in sync with it.
 
-`config/requirements.yml` is a copy of the `requirements.yml` shipped by
-`konstruktoid.hardening` at the pinned tag. The templates upload it and
-`scripts/hardening.sh` installs from it, so `ansible-galaxy` never installs
-collections fetched from a mutable tag at build time. Bumping the role version
-means checking that file against the upstream one for the new tag.
+`config/requirements.yml` pins the collections `konstruktoid.hardening` declares
+as dependencies at that tag. The templates upload it and `scripts/hardening.sh`
+installs from it, then installs the collection itself with `--no-deps`, so
+`ansible-galaxy` never resolves a dependency from a mutable ref at build time.
+Bumping the collection version means checking that file against the upstream
+`galaxy.yml` and `requirements.yml` for the new tag.
 
 The contents of `instructions/` and `.agents/skills/` are vendored copies of
 [konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)

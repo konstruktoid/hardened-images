@@ -1,14 +1,15 @@
 ---
+# Keep in sync with konstruktoid.hardening at var.hardening_collection_version.
 collections:
   - name: ansible.posix
-    version: 2.1.0
+    version: 2.2.2
     source: https://github.com/ansible-collections/ansible.posix.git
     type: git
   - name: community.crypto
-    version: 3.1.1
+    version: 3.3.0
     source: https://github.com/ansible-collections/community.crypto.git
     type: git
   - name: community.general
-    version: 12.4.0
+    version: 13.3.0
     source: https://github.com/ansible-collections/community.general.git
     type: git
