@@ -204,7 +204,7 @@ ssh -p 2222 ubuntu@localhost
 ├── config
 │   ├── ansible.cfg
 │   ├── local.yml         # Selects and configures konstruktoid.hardening roles
-│   └── requirements.yml  # Collections konstruktoid.hardening depends on
+│   └── requirements.yml  # konstruktoid.hardening and its dependencies
 ├── seed
 │   ├── meta-data
 │   └── user-data.pkrtpl.hcl  # cloud-init NoCloud configuration
@@ -242,7 +242,7 @@ The pinned versions that a build depends on are set in the templates:
 |---|---|
 | Packer core and plugins | `packer` block in each `*.pkr.hcl` |
 | `konstruktoid.hardening` collection tag | `var.hardening_collection_version` |
-| Collections it depends on | `config/requirements.yml` |
+| The collection and its dependencies, for build and lint | `config/requirements.yml` |
 | Syft | `var.syft_version` |
 | Ubuntu cloud image and its checksum | `var.iso_url` / `var.iso_checksum` (QEMU only) |
 | Agent skills and instructions | `DEFAULT_UPSTREAM_REF` / `DEFAULT_UPSTREAM_COMMIT` in `tools/vendor-agent-standards.sh` |
@@ -263,12 +263,15 @@ for that poweroff.
 still run standalone. Change the version in the template variable, then keep
 those defaults in sync with it.
 
-`config/requirements.yml` pins the collections `konstruktoid.hardening` declares
-as dependencies at that tag. The templates upload it and `scripts/hardening.sh`
-installs from it, then installs the collection itself with `--no-deps`, so
-`ansible-galaxy` never resolves a dependency from a mutable ref at build time.
-Bumping the collection version means checking that file against the upstream
-`galaxy.yml` and `requirements.yml` for the new tag.
+`config/requirements.yml` pins `konstruktoid.hardening` itself together with
+every collection it depends on, transitively. The templates upload it and
+`scripts/hardening.sh` installs the whole file with `--no-deps` before
+reinstalling the collection at the template's tag, so `ansible-galaxy` never
+resolves a dependency from a mutable ref at build time. The `ansible-lint` job
+in CI installs the same file, which is what makes the collection's roles
+resolvable when the playbook is linted. Bumping the collection version means
+checking that file against the upstream `galaxy.yml` and `requirements.yml` for
+the new tag.
 
 The contents of `instructions/` and `.agents/skills/` are vendored copies of
 [konstruktoid/agent-instructions-skills](https://github.com/konstruktoid/agent-instructions-skills)

@@ -12,7 +12,6 @@ export HISTSIZE=0
 export HISTFILESIZE=0
 export PATH="${PATH}:${HOME}/.local/bin"
 
-# cloud-init still holds the dpkg lock and rewrites user and SSH settings while sshd already accepts connections.
 if command -v cloud-init > /dev/null 2>&1; then
   cloud-init status --wait || cloud-init status --long
 fi
@@ -31,9 +30,9 @@ fi
 
 cat "${REQUIREMENTS_FILE}"
 
-ansible-galaxy install -r "${REQUIREMENTS_FILE}"
+ansible-galaxy collection install --no-deps -r "${REQUIREMENTS_FILE}"
 
-ansible-galaxy collection install --no-deps \
+ansible-galaxy collection install --force --no-deps \
   "git+${HARDENING_COLLECTION_REPO},${HARDENING_COLLECTION_VERSION}"
 
 cd /tmp

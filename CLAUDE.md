@@ -52,17 +52,20 @@ so the playbook's role list is the hardening scope.
   HCL and lives in `scripts/` and `config/local.yml` instead.
 - `config/local.yml` — the playbook that applies the `konstruktoid.hardening`
   roles with this repo's variable overrides (SSH, auditd, etc.). The role list
-  maps one to one onto the task files the monolithic role ran, in the same
+  maps one-to-one onto the task files the monolithic role ran, in the same
   order, so selecting a role is the hardening switch its `manage_*` variables
   used to be: `aide`, `ufw`, `disable_ipv6` and `disable_wireless` are
   deliberately left out, the old `fstab`, `suid` and `rkhunter` tasks have no
   role in the collection, and `chrony`, `firewalld` and `selinux` had no
   counterpart in the role. `config/ansible.cfg`
-  configures the Ansible run. `config/requirements.yml` pins the collections
-  `konstruktoid.hardening` declares as dependencies at the pinned tag; both
-  templates upload it and `scripts/hardening.sh` installs from it before
-  installing the collection itself with `--no-deps`, so nothing is resolved
-  from a mutable ref at build time. Keep it in sync when bumping the
+  configures the Ansible run. `config/requirements.yml` pins
+  `konstruktoid.hardening` itself together with every collection it depends on,
+  transitively; both templates upload it and `scripts/hardening.sh` installs
+  the whole file with `--no-deps` before reinstalling the collection at
+  `var.hardening_collection_version`, so nothing is resolved from a mutable ref
+  at build time. `.github/workflows/lint.yml` hands the same file to the
+  `ansible-lint` action as `requirements_file`, which is what makes the
+  collection's roles resolvable during lint. Keep it in sync when bumping the
   collection version.
 - `seed/user-data.pkrtpl.hcl` (+ `seed/meta-data`) — cloud-init NoCloud seed,
   attached to the build VM as a `cidata` CD-ROM via `cd_content`. It sets the
