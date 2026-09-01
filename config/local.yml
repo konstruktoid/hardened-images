@@ -1,46 +1,32 @@
 ---
-- name: Checkout and configure konstruktoid.hardening
+- name: Configure konstruktoid.hardening
   hosts: localhost
   any_errors_fatal: true
   gather_facts: true
-
-  vars:
-    hardening_role_version: v4.4.1
-    hardening_role_repo: https://github.com/konstruktoid/ansible-role-hardening
-    hardening_role_path: /etc/ansible/roles/konstruktoid.hardening
-
-  tasks:
-    - name: Clone hardening repository
-      become: true
-      tags:
-        - always
-      block:
-        - name: Install git
-          ansible.builtin.package:
-            name: git
-            state: present
-
-        - name: Checkout konstruktoid.hardening
-          ansible.builtin.git:
-            repo: "{{ hardening_role_repo }}"
-            dest: "{{ hardening_role_path }}"
-            version: "{{ hardening_role_version }}"
-
-        - name: Remove git
-          ansible.builtin.package:
-            name: git
-            state: absent
-
-    - name: Include the hardening role
-      ansible.builtin.include_role:
-        name: konstruktoid.hardening
+  roles:
+    - role: konstruktoid.hardening.resolvedconf
+    - role: konstruktoid.hardening.sysctl
+    - role: konstruktoid.hardening.kernel
+    - role: konstruktoid.hardening.kernel_modules
+    - role: konstruktoid.hardening.usbguard
+    - role: konstruktoid.hardening.systemdconf
+    - role: konstruktoid.hardening.journald
+    - role: konstruktoid.hardening.timesyncd
+    - role: konstruktoid.hardening.mount
+    - role: konstruktoid.hardening.prelink
+    - role: konstruktoid.hardening.package_management
+    - role: konstruktoid.hardening.automatic_updates
+    - role: konstruktoid.hardening.tcpwrappers
+    - role: konstruktoid.hardening.login_defs
+    - role: konstruktoid.hardening.limits
+    - role: konstruktoid.hardening.adduser
+    - role: konstruktoid.hardening.root_access
+    - role: konstruktoid.hardening.packages
+    - role: konstruktoid.hardening.ssh
       vars:
-        auditd_apply_audit_rules: false
-        manage_aide: false
-        manage_ufw: false
         sshd_allow_groups:
-          - sudo
-          - ubuntu
+          - "sudo"
+          - "ubuntu"
         sshd_allow_users: []
         sshd_login_grace_time: 60
         sshd_max_auth_tries: 10
@@ -48,4 +34,26 @@
         sshd_permit_root_login: false
         sshd_update_moduli: true
         sshd_use_dns: false
-        suid_sgid_permissions: false
+    - role: konstruktoid.hardening.password_management
+    - role: konstruktoid.hardening.schedulers
+    - role: konstruktoid.hardening.ctrlaltdel
+    - role: konstruktoid.hardening.auditd
+      vars:
+        auditd_apply_audit_rules: false
+    - role: konstruktoid.hardening.apparmor
+    - role: konstruktoid.hardening.delete_users
+    - role: konstruktoid.hardening.compilers
+    - role: konstruktoid.hardening.umask
+    - role: konstruktoid.hardening.paths
+    - role: konstruktoid.hardening.logindconf
+    - role: konstruktoid.hardening.issue
+    - role: konstruktoid.hardening.apport
+    - role: konstruktoid.hardening.lock_root
+    - role: konstruktoid.hardening.postfix
+    - role: konstruktoid.hardening.motd_news
+    - role: konstruktoid.hardening.sudo
+    - role: konstruktoid.hardening.netplan
+    - role: konstruktoid.hardening.file_permissions
+      vars:
+        file_permissions_bootloader_mode: "0400"
+        file_permissions_passwd: false

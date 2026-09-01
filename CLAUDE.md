@@ -11,17 +11,18 @@ and a local [QEMU](https://www.qemu.org/) `.qcow2` disk image (a former `.ova`
 target is documented in git history only). The QEMU target starts from the
 official Ubuntu cloud image; Ubuntu 26.04 LTS (Resolute Raccoon) is the default.
 Hardening is applied by the external
-[konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
-Ansible role. The role code is external; it is installed and configured by the Ansible playbook in `config/local.yml`
-(with settings from `config/ansible.cfg`).
+[konstruktoid/ansible-collection-hardening](https://github.com/konstruktoid/ansible-collection-hardening)
+Ansible collection. The collection code is external; it is installed and configured by the Ansible playbook in `config/local.yml`
+(with settings from `config/ansible.cfg`). The collection has no umbrella role,
+so the playbook's role list is the hardening scope.
 
 ## Commands
 
 - `bash build_box.sh` — builds the local `.qcow2` image: generates a
   throwaway SSH keypair, boots the official Ubuntu cloud image in QEMU,
   configures it on first boot from the NoCloud `cidata` seed in
-  `seed/user-data.pkrtpl.hcl`, provisions with `konstruktoid.hardening`,
-  generates an SBOM (`scripts/sbom.sh`, Syft) and then strips the ephemeral
+  `seed/user-data.pkrtpl.hcl`, provisions with the `konstruktoid.hardening`
+  collection, generates an SBOM (`scripts/sbom.sh`, Syft) and then strips the ephemeral
   keypair (`scripts/cleanup.sh`, always last). Extra args are passed through
   to `packer build`, e.g.
   `bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 ..."]'`.
@@ -49,14 +50,23 @@ Ansible role. The role code is external; it is installed and configured by the A
 - `ubuntu-hardened-qemu.pkr.hcl` / `ubuntu-hardened-azure.pkr.hcl` — Packer
   templates for the two build targets. Provisioning logic is kept out of the
   HCL and lives in `scripts/` and `config/local.yml` instead.
-- `config/local.yml` — the playbook that clones a pinned version of
-  `ansible-role-hardening` and includes it with this repo's variable
-  overrides (SSH, sudo, ufw, auditd, etc.). `config/ansible.cfg` configures
-  the Ansible run. `config/requirements.yml` is a checked-in copy of the
-  collections `ansible-role-hardening` requires at the pinned tag; both
-  templates upload it and `scripts/hardening.sh` installs from it, so nothing
-  is fetched from a mutable ref at build time. Keep it in sync when bumping
-  the role version.
+- `config/local.yml` — the playbook that applies the `konstruktoid.hardening`
+  roles with this repo's variable overrides (SSH, auditd, etc.). The role list
+  maps one-to-one onto the task files the monolithic role ran, in the same
+  order, so selecting a role is the hardening switch its `manage_*` variables
+  used to be: `aide`, `ufw`, `disable_ipv6` and `disable_wireless` are
+  deliberately left out, the old `fstab`, `suid` and `rkhunter` tasks have no
+  role in the collection, and `chrony`, `firewalld` and `selinux` had no
+  counterpart in the role. `config/ansible.cfg`
+  configures the Ansible run. `config/requirements.yml` pins
+  `konstruktoid.hardening` itself together with every collection it depends on,
+  transitively; both templates upload it and `scripts/hardening.sh` installs
+  the whole file with `--no-deps` before reinstalling the collection at
+  `var.hardening_collection_version`, so nothing is resolved from a mutable ref
+  at build time. `.github/workflows/lint.yml` hands the same file to the
+  `ansible-lint` action as `requirements_file`, which is what makes the
+  collection's roles resolvable during lint. Keep it in sync when bumping the
+  collection version.
 - `seed/user-data.pkrtpl.hcl` (+ `seed/meta-data`) — cloud-init NoCloud seed,
   attached to the build VM as a `cidata` CD-ROM via `cd_content`. It sets the
   build user's password hash with `hashed_passwd`, because cloud-init ignores
@@ -76,7 +86,7 @@ Ansible role. The role code is external; it is installed and configured by the A
   `-on-error=run-cleanup-provisioner`. `scripts/azure.sh` — Azure-specific
   provisioning helper.
 - The scripts take their pinned versions and the build username from
-  `environment_vars` set by the templates (`HARDENING_ROLE_VERSION`,
+  `environment_vars` set by the templates (`HARDENING_COLLECTION_VERSION`,
   `SYFT_VERSION`, `BUILD_USERNAME`), each with a matching default so the script
   still runs standalone. Change the version in the template variable, not in
   the script. The sudo password travels the same way, as `SUDO_PASSWORD` in
@@ -119,7 +129,8 @@ Ansible role. The role code is external; it is installed and configured by the A
     `.github/workflows/**` (least-privilege `permissions`, pinned third-party
     actions by SHA, no curl-pipe-to-shell, explicit `timeout-minutes`/`concurrency`).
   - `.github/instructions/ansible.instructions.md` applies to `config/*.yml`
-    (module-first, FQCN, pinned role version, conservative hardening changes).
+    (module-first, FQCN, pinned collection version, conservative hardening
+    changes).
   - `.github/instructions/packer-shell.instructions.md` applies to `*.pkr.hcl`
     and scripts (declarative templates, pinned plugin versions, secret/key
     hygiene, SBOM/provenance completeness).

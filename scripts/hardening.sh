@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-HARDENING_ROLE_VERSION="${HARDENING_ROLE_VERSION:-v4.4.1}"
+HARDENING_COLLECTION_VERSION="${HARDENING_COLLECTION_VERSION:-v0.3.2}"
+HARDENING_COLLECTION_REPO="${HARDENING_COLLECTION_REPO:-https://github.com/konstruktoid/ansible-collection-hardening.git}"
 
 BUILD_USERNAME="${BUILD_USERNAME:-ubuntu}"
 
@@ -11,7 +12,6 @@ export HISTSIZE=0
 export HISTFILESIZE=0
 export PATH="${PATH}:${HOME}/.local/bin"
 
-# cloud-init still holds the dpkg lock and rewrites user and SSH settings while sshd already accepts connections.
 if command -v cloud-init > /dev/null 2>&1; then
   cloud-init status --wait || cloud-init status --long
 fi
@@ -30,13 +30,14 @@ fi
 
 cat "${REQUIREMENTS_FILE}"
 
-ansible-galaxy install -r "${REQUIREMENTS_FILE}"
+ansible-galaxy collection install --no-deps -r "${REQUIREMENTS_FILE}"
+
+ansible-galaxy collection install --force --no-deps \
+  "git+${HARDENING_COLLECTION_REPO},${HARDENING_COLLECTION_VERSION}"
 
 cd /tmp
 
-ansible-playbook -i '127.0.0.1,' -c local \
-  -e "hardening_role_version=${HARDENING_ROLE_VERSION}" \
-  ./local.yml
+ansible-playbook -i '127.0.0.1,' -c local ./local.yml
 
 if id "${BUILD_USERNAME}" > /dev/null 2>&1; then
   chage --maxdays 365 "${BUILD_USERNAME}"

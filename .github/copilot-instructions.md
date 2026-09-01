@@ -2,9 +2,9 @@
 
 This repository builds hardened Ubuntu server images (Azure VM image, QEMU
 `.qcow2`, and formerly `.ova`) using [Packer](https://www.packer.io/) and the
-[konstruktoid/ansible-role-hardening](https://github.com/konstruktoid/ansible-role-hardening)
-Ansible role. Prefer secure-by-default, operationally reliable, maintainable,
-and auditable changes.
+[konstruktoid/ansible-collection-hardening](https://github.com/konstruktoid/ansible-collection-hardening)
+Ansible collection. Prefer secure-by-default, operationally reliable,
+maintainable, and auditable changes.
 
 ## Mission and baseline
 - Preserve existing hardening intent unless an explicit deviation is requested.
@@ -12,7 +12,7 @@ and auditable changes.
   CMMC-oriented practices.
 - Prefer minimal, reviewable, reversible diffs.
 - The build must remain reproducible without external dependencies beyond the
-  official Ubuntu ISO, Packer, QEMU/OVMF, and the pinned hardening role
+  official Ubuntu ISO, Packer, QEMU/OVMF, and the pinned hardening collection
   version — do not introduce hidden network fetches or unpinned tooling.
 
 ## Engineering expectations
@@ -30,18 +30,18 @@ and auditable changes.
   credentials (`ARM_*`) must never be persisted to disk or committed.
 - Treat SSH access, the `ubuntu` account/password, sudo, PAM, audit/logging,
   firewall (ufw), mounts, sysctl, services, and authentication settings as
-  high-sensitivity areas — these are set via `config/local.yml` vars passed
-  to `konstruktoid.hardening`.
+  high-sensitivity areas — these are set by the `konstruktoid.hardening` roles
+  `config/local.yml` selects and by the vars it passes them.
 - The ephemeral Packer provisioning SSH keypair must always be stripped by
   `scripts/cleanup.sh` before a build finishes; do not weaken or bypass that
   cleanup step.
-- Avoid security relaxations (e.g. `sshd_password_authentication`,
-  `manage_ufw: false`, disabling audit rules) unless explicitly requested and
-  documented with rationale.
+- Avoid security relaxations (e.g. `sshd_password_authentication`, dropping a
+  role from `config/local.yml`, disabling audit rules) unless explicitly
+  requested and documented with rationale.
 
 ## Preferred patterns
-- Pin the `konstruktoid.hardening` role to an explicit version/tag (as done
-  in `config/local.yml` / workflow provisioning), not a floating branch.
+- Pin the `konstruktoid.hardening` collection to an explicit version/tag (as
+  done in `var.hardening_collection_version`), not a floating branch.
 - Explicit `owner`, `group`, and quoted octal string `mode` values for any
   managed files touched via Ansible.
 - Double-quoted YAML strings in `config/local.yml` and workflow YAML.
