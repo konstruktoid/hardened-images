@@ -147,10 +147,12 @@ source "qemu" "hardened" {
   output_directory = local.build_dir
   vm_name          = "${local.image_name}.qcow2"
 
-  disk_size      = var.disk_size
-  format         = "qcow2"
-  disk_interface = "virtio-scsi"
-  net_device     = "virtio-net"
+  disk_size        = var.disk_size
+  format           = "qcow2"
+  disk_interface   = "virtio-scsi"
+  net_device       = "virtio-net"
+  disk_discard     = "unmap"
+  disk_compression = true
 
   accelerator = var.accelerator
   memory      = var.memory

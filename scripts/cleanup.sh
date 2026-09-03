@@ -13,8 +13,6 @@ export HISTSIZE=0
 export HISTFILESIZE=0
 
 filter_lines() {
-  # grep exits 1 when nothing matches, which is the expected "no such packages"
-  # case here. Anything above that is a real failure and must not be swallowed.
   local status=0
 
   grep "$@" || status="$?"
@@ -56,7 +54,6 @@ rm -rf /root/.ssh
 systemd-tmpfiles --clean
 systemd-tmpfiles --remove
 
-# Ubuntu's own repositories are deb822 .sources since 24.04, and removing them leaves no package sources.
 find /etc/apt/sources.list.d -maxdepth 1 -type f -name '*.list' -print -delete
 
 KERNEL_RELEASE="$(uname -r)"
@@ -68,11 +65,11 @@ purge_matching 'linux-source'
 purge_matching '-doc$'
 purge_matching '-dev(:[a-z0-9]+)?$'
 
-# Purging wget takes ssh-import-id with it; netcat-openbsd stays because cloud-init-base requires it.
 for PACKAGE in ansible bash-completion command-not-found command-not-found-data curl \
   fonts-ubuntu-console fonts-ubuntu-font-family-console friendly-recovery \
-  grub-legacy-ec2 installation-report laptop-detect libx11-6 libx11-data libxcb1 \
-  libxext6 libxmuu1 motd-news-config popularity-contest ppp pppconfig pppoeconf usbutils \
+  fwupd grub-legacy-ec2 installation-report laptop-detect libx11-6 libx11-data libxcb1 \
+  libxext6 libxmuu1 linux-perf man-db manpages motd-news-config popularity-contest ppp pppconfig pppoeconf \
+  python3-boto3 python3-botocore snapd usbutils \
   wget xauth; do
   apt-get --assume-yes purge "${PACKAGE}" || true
 done
@@ -80,19 +77,37 @@ done
 cat >> /etc/dpkg/dpkg.cfg.d/excludes <<'_EOF_'
 path-exclude=/lib/firmware/*
 path-exclude=/usr/share/doc/linux-firmware/*
+path-exclude=/usr/share/locale/*
+path-include=/usr/share/locale/en*
+path-include=/usr/share/locale/locale.alias
+path-exclude=/usr/share/man/*
 _EOF_
 
 rm -rf /lib/firmware/*
 rm -rf /usr/share/doc/linux-firmware/*
 rm -rf /usr/share/doc/*
+rm -rf /usr/share/man/*
 
-apt-get --assume-yes autoremove
+find /usr/share/locale -mindepth 1 -maxdepth 1 -type d ! -name 'en*' -exec rm -rf {} +
+
+rm -rf /var/lib/snapd /var/cache/snapd /snap "${BUILD_USER_HOME}/snap" /root/snap
+
+apt-get --assume-yes --purge autoremove
 apt-get --assume-yes clean
+
+dpkg-query --show --showformat='${db:Status-Abbrev}\t${Package}\n' \
+  | awk -F'\t' '$1 ~ /^rc/ { print $2 }' \
+  | xargs --no-run-if-empty dpkg --purge
 
 find /var/lib/apt/lists -maxdepth 1 -type f ! -name lock -delete
 rm -f /var/lib/dpkg/status-old /var/lib/dpkg/available-old
 
-find / -xdev -type f \( -name '*.bak' -o -name '*.old' -o -name '*.orig' \) -delete
+find / -xdev -type f \
+  \( -name '*.bak' -o -name '*.old' -o -name '*.orig' -o -name '*~' \
+  -o -name '*.dpkg-old' -o -name '*.dpkg-new' -o -name '*.dpkg-dist' \
+  -o -name '*.dpkg-bak' -o -name '*.dpkg-tmp' \
+  -o -name '*.ucf-old' -o -name '*.ucf-new' -o -name '*.ucf-dist' \
+  -o -name '*.rej' -o -name '*.swp' -o -name '*.swo' \) -delete
 
 find /var/cache -xdev -type f -delete
 find /var/log -xdev -type f -exec truncate --size=0 {} +
@@ -105,7 +120,6 @@ journalctl --rotate
 journalctl --vacuum-time=1s
 rm -rf /var/log/journal/*
 
-# cloud-init pins the build VM's MAC address here, leaving no matching interface elsewhere.
 rm -f /etc/netplan/50-cloud-init.yaml
 install -m 0600 /dev/null /etc/netplan/01-dhcp-all-ethernets.yaml
 cat > /etc/netplan/01-dhcp-all-ethernets.yaml <<'_EOF_'
@@ -119,7 +133,6 @@ network:
       dhcp6: true
 _EOF_
 
-# The build-time NoCloud seed and instance state must not become the shipped image's identity.
 if command -v cloud-init > /dev/null 2>&1; then
   cloud-init clean --logs --seed
 fi
@@ -156,10 +169,8 @@ _EOF_
 
 rm -vf /root/.*history
 
-# The QEMU build powers the machine off from here, as root, so that Packer's shutdown_command
-# does not have to carry the sudo password. The timer also truncates whatever this script and
-# the remaining session wrote after the wipe above. The Azure builder deprovisions on its own
-# and must never see this.
+fstrim -av || printf 'warning: fstrim did not complete\n' >&2
+
 if [ "${POWEROFF_AFTER_CLEANUP}" = "true" ]; then
   systemd-run --collect --unit=packer-poweroff --on-active=30 \
     bash -c 'find /var/log -xdev -type f -exec truncate --size=0 {} +;
