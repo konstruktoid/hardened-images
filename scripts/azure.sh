@@ -9,7 +9,7 @@ export HISTSIZE=0
 export HISTFILESIZE=0
 
 tee /etc/default/grub.d/99-azure.cfg <<'_EOF_'
-GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200"
 _EOF_
 
 update-grub
