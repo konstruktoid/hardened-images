@@ -25,7 +25,11 @@ so the playbook's role list is the hardening scope.
   collection, generates an SBOM (`scripts/sbom.sh`, Syft) and then strips the ephemeral
   keypair (`scripts/cleanup.sh`, always last). Extra args are passed through
   to `packer build`, e.g.
-  `bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 ..."]'`.
+  `bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 ..."]'`. That
+  variable is what makes the built image reachable over SSH at all:
+  `config/local.yml` sets `sshd_password_authentication: false` and
+  `scripts/cleanup.sh` strips the ephemeral keypair, so an image built without
+  it is only reachable on the console, with the build password.
   Output (`.qcow2`, `.spdx.json`, `.cdx.json`, `CHECKSUMS`) lands under a
   timestamped subdirectory of `output/`.
 - `packer init -upgrade ubuntu-hardened-azure.pkr.hcl`

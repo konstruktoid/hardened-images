@@ -117,22 +117,28 @@ console log (`serial.log`) and the guest's UEFI variable store
 By default the image ships with a single `ubuntu` account (password
 `ubuntu`, see `var.password`/`var.password_hash`) and no persisted SSH keys.
 
-> **Note**
-> That password is a published default and it survives into the built image,
-> which also has `sshd_password_authentication` enabled. It is meant for local
-> testing. For anything else, override `var.password` and `var.password_hash`
-> together, generating the hash with `openssl passwd -6`.
-
-Pass your own public keys to keep them installed in the built image:
+`config/local.yml` sets `sshd_password_authentication: false`, so the built
+image never accepts a password over SSH. Pass the public keys you intend to
+log in with, otherwise the image has no SSH access at all: the ephemeral
+keypair Packer provisions over is always stripped by
+[scripts/cleanup.sh](./scripts/cleanup.sh) before the build finishes.
 
 ```sh
 bash build_box.sh -var 'ssh_authorized_keys=["ssh-ed25519 AAAA... you@example.com"]'
 ```
 
 Extra arguments given to `build_box.sh` are passed through to `packer build`.
-The ephemeral keypair Packer itself uses to provision the image is always
-stripped by [scripts/cleanup.sh](./scripts/cleanup.sh) before the build
-finishes.
+
+An image built without `ssh_authorized_keys` is still reachable on the serial
+console, where `login` authenticates against `/etc/shadow` and is unaffected
+by the `sshd` setting. That is the recovery path, and it is why the account
+keeps a password at all.
+
+> **Note**
+> That password is a published default and it survives into the built image.
+> It is meant for local testing. For anything else, override `var.password`
+> and `var.password_hash` together, generating the hash with
+> `openssl passwd -6`.
 
 ### Verification
 
@@ -176,13 +182,17 @@ discarded when the VM stops and the `.qcow2` stays byte-identical to what
 `CHECKSUMS` records. Booting an image to inspect it therefore cannot invalidate
 its checksum. Remove the flag if a session needs to persist across reboots.
 
-Once booted, connect over SSH as the `ubuntu` user, either with a key you
-passed via `ssh_authorized_keys` or with the password `ubuntu`
-(see [Local qcow2 image](#local-qcow2-image)):
+Once booted, connect over SSH as the `ubuntu` user with a key passed via
+`ssh_authorized_keys` at build time. The image does not accept passwords over
+SSH:
 
 ```sh
 ssh -p 2222 ubuntu@localhost
 ```
+
+An image built without such a key has no SSH access. Log in instead on the
+serial console the script attaches to stdio, as `ubuntu` with the password
+`ubuntu` (see [Local qcow2 image](#local-qcow2-image)).
 
 ## Repository structure
 
