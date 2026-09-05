@@ -119,7 +119,7 @@ variable "ssh_private_key_file" {
 variable "ssh_authorized_keys" {
   type        = list(string)
   default     = []
-  description = "Additional public keys to keep in authorized_keys after the build. The build-only ephemeral key is stripped by scripts/cleanup.sh."
+  description = "Public keys to keep in authorized_keys after the build. Required for SSH access to the built image: config/local.yml disables sshd password authentication, and the build-only ephemeral key is stripped by scripts/cleanup.sh."
 }
 
 locals {
