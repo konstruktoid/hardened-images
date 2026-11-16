@@ -22,7 +22,7 @@ jobs:
       contents: "read"
     steps:
       - name: "Harden Runner"
-        uses: "step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43" # v2.22.3
+        uses: "step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a" # v2.22.4
         with:
           egress-policy: "audit"
 
@@ -81,7 +81,7 @@ jobs:
           advanced-security: false
 
       - name: "Run ansible-lint"
-        uses: "ansible/ansible-lint@9bce2bfb8f4a984e6b13767bc0d6bf0a49492164" # v26.10.1
+        uses: "ansible/ansible-lint@b74fb6f73d234bf92672372cb1c10768e4018d16" # v26.11.0
         with:
           args: "config/"
           requirements_file: "config/requirements.yml"
