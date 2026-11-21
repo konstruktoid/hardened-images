@@ -6,6 +6,10 @@ packer {
       version = "~> 1.1.6"
       source  = "github.com/hashicorp/qemu"
     }
+    vagrant = {
+      version = "~> 1.1.7"
+      source  = "github.com/hashicorp/vagrant"
+    }
   }
 }
 
@@ -35,8 +39,8 @@ variable "disk_size" {
 
 variable "memory" {
   type        = number
-  default     = 2048
-  description = "Memory, in MB, given to the build VM."
+  default     = 4096
+  description = "Memory, in MB, given to the build VM. Below 4096 the Syft SBOM scan is OOM-killed and the build fails."
 }
 
 variable "cpus" {
@@ -241,5 +245,13 @@ build {
     expect_disconnect = true
     remote_folder     = "/var/tmp"
     scripts           = ["${path.root}/scripts/cleanup.sh"]
+  }
+
+  post-processor "vagrant" {
+    name                 = "vagrant"
+    output               = "${local.build_dir}/${local.image_name}.box"
+    architecture         = "amd64"
+    keep_input_artifact  = true
+    vagrantfile_template = "${path.root}/vagrant/Vagrantfile"
   }
 }

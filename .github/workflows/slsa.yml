@@ -48,6 +48,7 @@ jobs:
             ./tools/*.sh \
             ./config/* \
             ./seed/* \
+            ./vagrant/* \
             > "${REPOSITORY_NAME}.sha256"
 
       - name: "Generate hashes"

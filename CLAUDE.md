@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `hardened-images` builds hardened Ubuntu server images using
 [Packer](https://www.packer.io/) templates. Targets are an
-[Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer)
-and a local [QEMU](https://www.qemu.org/) `.qcow2` disk image (a former `.ova`
+[Azure virtual machine image](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/build-image-with-packer),
+a local [QEMU](https://www.qemu.org/) `.qcow2` disk image, and a
+vagrant-libvirt `.box` packaged from that `.qcow2` (a former `.ova`
 target is documented in git history only). The QEMU target starts from the
 official Ubuntu cloud image; Ubuntu 26.04 LTS (Resolute Raccoon) is the default.
 Hardening is applied by the external
@@ -30,8 +31,8 @@ so the playbook's role list is the hardening scope.
   `config/local.yml` sets `sshd_password_authentication: false` and
   `scripts/cleanup.sh` strips the ephemeral keypair, so an image built without
   it is only reachable on the console, with the build password.
-  Output (`.qcow2`, `.spdx.json`, `.cdx.json`, `CHECKSUMS`) lands under a
-  timestamped subdirectory of `output/`.
+  Output (`.qcow2`, `.box`, `.spdx.json`, `.cdx.json`, `CHECKSUMS`) lands under a
+  timestamped subdirectory of `output/`. `-except=vagrant` skips the `.box`.
 - `packer init -upgrade ubuntu-hardened-azure.pkr.hcl`
   / `packer validate ...` / `packer build ...` — Azure image build. Requires
   Azure credentials; see `azure_vars_export` and `scripts/azure.sh`.
@@ -102,6 +103,12 @@ so the playbook's role list is the hardening scope.
   `shutdown_command` is a bare `true` that only makes Packer wait for the
   machine to go down. The Azure builder deprovisions on its own and must not
   get that variable.
+- `vagrant/Vagrantfile` — packaged into the `.box` by the QEMU template's
+  `vagrant` post-processor (libvirt provider). The box is the hardened image
+  unchanged: no `vagrant` user, no insecure key, password-protected sudo. Keep it
+  that way; the Vagrantfile adapts Vagrant to the image (SSH as the build user,
+  `insert_key = false`, no default synced folder, no fstab edit, OVMF loader and NVRAM), never
+  the reverse.
 - `tools/vendor-agent-standards.sh` — repository tooling, not provisioning.
   Nothing under `tools/` is uploaded into an image.
 - `build_box.sh` — orchestrates the full local QEMU build lifecycle

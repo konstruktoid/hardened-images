@@ -1,0 +1,21 @@
+# Packaged into the hardened box by the vagrant post-processor; a project Vagrantfile overrides any of it.
+require "digest"
+
+Vagrant.configure("2") do |config|
+  # The image keeps no vagrant account or insecure key; log in as the build user with a key from ssh_authorized_keys.
+  config.ssh.username = "ubuntu"
+  config.ssh.insert_key = false
+
+  # sudo requires a password in the image, so the default synced folder cannot be set up.
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # Vagrant otherwise runs sudo to write /etc/fstab, which fails and makes vagrant up exit non-zero.
+  config.vm.allow_fstab_modification = false
+
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.machine_type = "q35"
+    libvirt.loader = "/usr/share/OVMF/OVMF_CODE_4M.fd"
+    # One UEFI variable store per project directory; libvirt creates it from the loader's template on first boot.
+    libvirt.nvram = "/var/lib/libvirt/qemu/nvram/vagrant-#{Digest::SHA256.hexdigest(Dir.pwd)[0, 12]}_VARS.fd"
+  end
+end

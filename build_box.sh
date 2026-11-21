@@ -55,7 +55,7 @@ while IFS= read -r -d '' build_dir; do
     cd -- "${build_dir}"
     printf '# %s SHA256 checksums\n' "$(date --utc +%FT%TZ)" > CHECKSUMS
     find . -maxdepth 1 -type f \
-      \( -name '*.qcow2' -o -name '*.json' \) -printf '%P\0' \
+      \( -name '*.qcow2' -o -name '*.box' -o -name '*.json' \) -printf '%P\0' \
       | sort -z \
       | xargs -0 -r sha256sum >> CHECKSUMS
   )
