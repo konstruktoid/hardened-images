@@ -15,7 +15,8 @@ Vagrant.configure("2") do |config|
   config.vm.provider :libvirt do |libvirt|
     libvirt.machine_type = "q35"
     libvirt.loader = "/usr/share/OVMF/OVMF_CODE_4M.fd"
-    # One UEFI variable store per project directory; libvirt creates it from the loader's template on first boot.
-    libvirt.nvram = "/var/lib/libvirt/qemu/nvram/vagrant-#{Digest::SHA256.hexdigest(Dir.pwd)[0, 12]}_VARS.fd"
+    # One UEFI variable store per project directory, honouring VAGRANT_CWD.
+    project_dir = File.expand_path(ENV.fetch("VAGRANT_CWD", Dir.pwd))
+    libvirt.nvram = "/var/lib/libvirt/qemu/nvram/vagrant-#{Digest::SHA256.hexdigest(project_dir)[0, 12]}_VARS.fd"
   end
 end
