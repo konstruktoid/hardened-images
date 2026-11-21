@@ -1,7 +1,7 @@
 # Repository Instructions for GitHub Copilot
 
 This repository builds hardened Ubuntu server images (Azure VM image, QEMU
-`.qcow2`, and formerly `.ova`) using [Packer](https://www.packer.io/) and the
+`.qcow2`, a vagrant-libvirt `.box`, and formerly `.ova`) using [Packer](https://www.packer.io/) and the
 [konstruktoid/ansible-collection-hardening](https://github.com/konstruktoid/ansible-collection-hardening)
 Ansible collection. Prefer secure-by-default, operationally reliable,
 maintainable, and auditable changes.
@@ -69,7 +69,7 @@ maintainable, and auditable changes.
   `packer validate` before `packer build`.
 - Run `shellcheck` on changed shell scripts.
 - For local QEMU builds, `bash build_box.sh` should complete and produce a
-  bootable `.qcow2` plus SBOM/checksum output under `output/`.
+  bootable `.qcow2` and `.box` plus SBOM/checksum output under `output/`.
 - Prefer fixing lint/validation failures over suppressing them; treat
   suppression as a last resort requiring justification.
 
