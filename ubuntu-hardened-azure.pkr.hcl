@@ -106,7 +106,7 @@ variable "password" {
 
 variable "hardening_collection_version" {
   type        = string
-  default     = "v0.3.2"
+  default     = "v0.6.0"
   description = "Tag of konstruktoid/ansible-collection-hardening to provision with. Must match the default in scripts/hardening.sh."
 }
 
