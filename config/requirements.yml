@@ -18,6 +18,6 @@ collections:
     source: https://github.com/ansible-collections/community.library_inventory_filtering.git
     type: git
   - name: konstruktoid.hardening
-    version: v0.3.2
+    version: v0.6.0
     source: https://github.com/konstruktoid/ansible-collection-hardening.git
     type: git
